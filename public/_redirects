@@ -1,0 +1,2 @@
+/firebase-proxy/*  https://vocalog-d61ef-default-rtdb.firebaseio.com/:splat  200!
+/*  /index.html  200
