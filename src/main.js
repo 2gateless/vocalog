@@ -282,9 +282,14 @@ window.saveWord =  (index = null) => {
 window.deleteWord =  (index) => { if (confirm('삭제할까요?')) { words.splice(index, 1); saveAll(); window.navigateTo('list'); } };
 
 // --- Initialize ---
-window.onload = () => {
+window.navigateTo('list');
+
+// Google API 비동기 로드 확인 및 초기화
+const checkAndInitGoogle = () => {
   if (window.google) {
     initGoogleAuth();
+  } else {
+    setTimeout(checkAndInitGoogle, 500);
   }
-  window.navigateTo('list');
 };
+checkAndInitGoogle();
