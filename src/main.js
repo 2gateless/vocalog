@@ -48,12 +48,9 @@ const homeIconHTML = `
 
 // --- Local Storage Integration ---
 
-// --- Google Drive Sync ---
-const CLIENT_ID = '323291505088-ngturlrabjrghami7gnc3shhkdlhhjvp.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-let tokenClient;
-let accessToken = null;
-let googleFileId = null;
+// --- Firebase Sync ---
+let firebaseUrl = localStorage.getItem('firebase_url') || '';
+let deletedWords = new Set(JSON.parse(localStorage.getItem('deleted_words') || '[]'));
 
 const saveToLocal = () => {
   localStorage.setItem('voca_logs', JSON.stringify(words));
@@ -61,90 +58,116 @@ const saveToLocal = () => {
 
 const saveAll = async () => {
   saveToLocal();
-  if (accessToken) {
-    await uploadToDrive();
+  if (firebaseUrl) {
+    await uploadToFirebase();
   }
 };
 
-// --- Drive API Helpers ---
+const promptFirebaseUrl = (onSave = () => {}) => {
+  const modal = document.createElement('div');
+  modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;";
+  modal.innerHTML = `
+    <div style="background:#fff; padding:1.5rem; border-radius:1rem; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin:0 0 1rem 0; font-size:1.2rem; color:#333;">Firebase 연동</h3>
+      <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">Firebase Realtime Database URL을 입력하세요.<br><small>(예: https://my-project.firebaseio.com/words.json)</small></p>
+      <input type="url" id="url-input" value="${firebaseUrl}" placeholder="https://..." 
+        style="width:100%; padding:0.75rem; border:1.5px solid #e5e7eb; border-radius:0.5rem; 
+               font-size:0.85rem; box-sizing:border-box; margin-bottom:1rem;">
+      <div style="display:flex; gap:0.75rem;">
+        <button id="url-cancel" style="flex:1; padding:0.75rem; border:1.5px solid #d1d5db;
+          border-radius:0.5rem; background:#fff; cursor:pointer; font-size:0.9rem;">취소</button>
+        <button id="url-save" style="flex:2; padding:0.75rem; background:#a855f7; color:#fff;
+          border:none; border-radius:0.5rem; cursor:pointer; font-size:0.9rem; font-weight:600;">저장 후 동기화</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 
-const initGoogleAuth = () => {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: async (resp) => {
-      if (resp.error) return;
-      accessToken = resp.access_token;
-      localStorage.setItem('google_access_token', accessToken);
-      document.getElementById('sync-status').innerText = '동기화 중...';
-      await syncWithDrive();
-    },
-  });
+  const input = document.getElementById('url-input');
+  input.focus();
+  input.select();
+
+  document.getElementById('url-cancel').onclick = () => modal.remove();
+  document.getElementById('url-save').onclick = () => {
+    const val = input.value.trim();
+    if (!val) return;
+    firebaseUrl = val;
+    localStorage.setItem('firebase_url', firebaseUrl);
+    modal.remove();
+    onSave();
+  };
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 };
 
-const handleAuthClick = () => {
-  tokenClient.requestAccessToken({ prompt: '' });
-};
-
-const syncWithDrive = async () => {
+const syncWithFirebase = async () => {
+  if (!firebaseUrl) {
+    promptFirebaseUrl(syncWithFirebase);
+    return;
+  }
+  const statusEl = document.getElementById('sync-status');
+  if (statusEl) statusEl.innerText = '동기화 중...';
+  
   try {
-    const fileId = await findVocaFile();
-    if (fileId) {
-      googleFileId = fileId;
-      const driveData = await downloadFromDrive(fileId);
-      if (driveData && Array.isArray(driveData)) {
-        // Merge strategy: Drive data prepends to local if not present
-        const localWordsMap = new Map(words.map(w => [w.word, w]));
-        const newWords = driveData.filter(dw => !localWordsMap.has(dw.word));
-        words = [...newWords, ...words];
-        saveToLocal();
-        renderListView();
-      }
+    const response = await fetch(firebaseUrl);
+    if (!response.ok) throw new Error('Network error');
+    const remoteData = await response.json();
+    
+    if (remoteData) {
+      const remoteWordsMap = new Map();
+      Object.keys(remoteData).forEach(key => {
+        const item = remoteData[key];
+        remoteWordsMap.set(item.word, item);
+      });
+      
+      // Merge: remote wins except for deleted words
+      const mergedMap = new Map();
+      words.forEach(w => {
+        if (!deletedWords.has(w.word)) {
+           mergedMap.set(w.word, w);
+        }
+      });
+      remoteWordsMap.forEach((w, key) => {
+        if (!deletedWords.has(key)) {
+           mergedMap.set(key, w);
+        }
+      });
+      
+      words = Array.from(mergedMap.values());
+      saveToLocal();
+      
+      // Push back up
+      await uploadToFirebase();
+      
+      if (statusEl) statusEl.innerText = '동기화 완료';
+      renderListView();
+    } else {
+      // Remote empty, just push
+      await uploadToFirebase();
+      if (statusEl) statusEl.innerText = '동기화 완료';
     }
-    document.getElementById('sync-status').innerText = '동기화 완료';
   } catch (err) {
-    console.error('Sync failed', err);
-    document.getElementById('sync-status').innerText = '동기화 실패';
+    if (statusEl) statusEl.innerText = '동기화 실패';
+    console.error('Firebase Sync failed', err);
+    firebaseUrl = ''; // reset on fail
+    localStorage.removeItem('firebase_url');
   }
 };
 
-const findVocaFile = async () => {
-  const resp = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='voca_logs.json' and trashed=false`, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  const data = await resp.json();
-  return data.files && data.files.length > 0 ? data.files[0].id : null;
-};
-
-const downloadFromDrive = async (fileId) => {
-  const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  return await resp.json();
-};
-
-const uploadToDrive = async () => {
-  const metadata = { name: 'voca_logs.json', mimeType: 'application/json' };
-  const file = new Blob([JSON.stringify(words)], { type: 'application/json' });
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', file);
-
-  let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  let method = 'POST';
-
-  if (googleFileId) {
-    url = `https://www.googleapis.com/upload/drive/v3/files/${googleFileId}?uploadType=multipart`;
-    method = 'PATCH';
+const uploadToFirebase = async () => {
+  if (!firebaseUrl) return;
+  try {
+    await fetch(firebaseUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(words)
+    });
+  } catch (err) {
+    console.error('Failed to upload to Firebase', err);
   }
+};
 
-  const resp = await fetch(url, {
-    method,
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: form
-  });
-  const data = await resp.json();
-  if (!googleFileId) googleFileId = data.id;
+const handleSyncClick = () => {
+  syncWithFirebase();
 };
 
 // --- Helper: Pronunciation ---
@@ -159,12 +182,12 @@ const renderListView = () => {
       ${violetIconHTML}
       <span style="margin-left:10px;">VocaLog</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
+    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
     <div id="sync-status" style="display:none"></div>
   `;
-  document.getElementById('btn-sync').onclick = handleAuthClick;
+  document.getElementById('btn-sync').onclick = handleSyncClick;
   let html = '<div class="view voca-list">';
   if (words.length === 0) {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
@@ -196,11 +219,11 @@ const renderDetailView = (index) => {
       ${violetIconHTML}
       <span style="margin-left:10px;">단어정보</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
+    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
   `;
-  document.getElementById('btn-sync').onclick = handleAuthClick;
+  document.getElementById('btn-sync').onclick = handleSyncClick;
   appMain.innerHTML = `
     <div class="view detail-view">
       <div class="detail-header">
@@ -228,11 +251,11 @@ const renderFormView = (index = null) => {
       ${violetIconHTML}
       <span style="margin-left:10px;">${isEdit ? '수정하기' : '추가하기'}</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
+    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
   `;
-  document.getElementById('btn-sync').onclick = handleAuthClick;
+  document.getElementById('btn-sync').onclick = handleSyncClick;
   appMain.innerHTML = `
     <div class="view form-view">
       <div class="form-group"><label>영어 단어</label><input type="text" id="input-word" value="${w.word}"></div>
@@ -279,17 +302,15 @@ window.saveWord =  (index = null) => {
   saveAll();
   window.navigateTo('list');
 };
-window.deleteWord =  (index) => { if (confirm('삭제할까요?')) { words.splice(index, 1); saveAll(); window.navigateTo('list'); } };
+window.deleteWord =  (index) => {
+  if (confirm('삭제할까요?')) {
+    deletedWords.add(words[index].word);
+    localStorage.setItem('deleted_words', JSON.stringify([...deletedWords]));
+    words.splice(index, 1);
+    saveAll();
+    window.navigateTo('list');
+  }
+};
 
 // --- Initialize ---
 window.navigateTo('list');
-
-// Google API 비동기 로드 확인 및 초기화
-const checkAndInitGoogle = () => {
-  if (window.google) {
-    initGoogleAuth();
-  } else {
-    setTimeout(checkAndInitGoogle, 500);
-  }
-};
-checkAndInitGoogle();
