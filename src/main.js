@@ -79,7 +79,7 @@ const syncWithFirebase = async () => {
   if (statusEl) statusEl.innerText = '동기화 중...';
   
   try {
-    const dbRef = ref(db, 'words');
+    const dbRef = ref(db, 'vocaLog');
     const snapshot = await get(dbRef);
     const remoteData = snapshot.val();
     
@@ -87,18 +87,20 @@ const syncWithFirebase = async () => {
       const remoteWordsMap = new Map();
       Object.keys(remoteData).forEach(key => {
         const item = remoteData[key];
-        remoteWordsMap.set(item.word, item);
+        if (item && item.word) {
+          remoteWordsMap.set(item.word, item);
+        }
       });
       
       // Merge: remote wins except for deleted words
       const mergedMap = new Map();
       words.forEach(w => {
-        if (!deletedWords.has(w.word)) {
+        if (w && w.word && !deletedWords.has(w.word)) {
            mergedMap.set(w.word, w);
         }
       });
       remoteWordsMap.forEach((w, key) => {
-        if (!deletedWords.has(key)) {
+        if (w && w.word && !deletedWords.has(key)) {
            mergedMap.set(key, w);
         }
       });
@@ -124,7 +126,7 @@ const syncWithFirebase = async () => {
 
 const uploadToFirebase = async () => {
   try {
-    const dbRef = ref(db, 'words');
+    const dbRef = ref(db, 'vocaLog');
     await set(dbRef, words);
   } catch (err) {
     console.error('Failed to upload to Firebase', err);
@@ -158,6 +160,7 @@ const renderListView = () => {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
   } else {
     words.forEach((w, index) => {
+      if (!w || !w.word) return;
       html += `
         <div class="voca-item" onclick="window.navigateTo('detail', ${index})">
           <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -279,3 +282,4 @@ window.deleteWord =  (index) => {
 
 // --- Initialize ---
 window.navigateTo('list');
+syncWithFirebase();
