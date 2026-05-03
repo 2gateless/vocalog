@@ -1,8 +1,8 @@
 :root {
   --primary: #a855f7; /* Vibrant Violet */
   --primary-light: #f3e8ff;
-  --bg: #a78bfa; /* Much lighter, friendlier violet background */
-  --card-bg: #e5fabb; /* 뚜렷한 옅은 연두색 */
+  --bg: #ede9fe; /* Much lighter violet background */
+  --card-bg: #d9f99d; /* 약간 진한 연두색 (Lime 200) */
   --text-main: #1e1b4b;
   --text-muted: #6b7280;
   --accent: #fbbf24;
