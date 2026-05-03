@@ -7,6 +7,8 @@ window.addEventListener('error', (e) => {
 }, true);
 
 import './style.css'
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, get, set } from "firebase/database";
 
 // --- State Management ---
 let words = JSON.parse(localStorage.getItem('voca_logs')) || [];
@@ -46,10 +48,21 @@ const homeIconHTML = `
   </svg>
 `;
 
-// --- Local Storage Integration ---
-
 // --- Firebase Sync ---
-let firebaseUrl = localStorage.getItem('firebase_url') || '';
+const firebaseConfig = {
+  apiKey: "AIzaSyAAyr9JDbO2a5bWGACqg2RKwY2cI_lWv0E",
+  authDomain: "vocalog-d61ef.firebaseapp.com",
+  databaseURL: "https://vocalog-d61ef-default-rtdb.firebaseio.com",
+  projectId: "vocalog-d61ef",
+  storageBucket: "vocalog-d61ef.firebasestorage.app",
+  messagingSenderId: "546039240333",
+  appId: "1:546039240333:web:ce58ecb9d910cf055834c4",
+  measurementId: "G-KLK0YPR58Y"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 let deletedWords = new Set(JSON.parse(localStorage.getItem('deleted_words') || '[]'));
 
 const saveToLocal = () => {
@@ -58,59 +71,17 @@ const saveToLocal = () => {
 
 const saveAll = async () => {
   saveToLocal();
-  if (firebaseUrl) {
-    await uploadToFirebase();
-  }
-};
-
-const promptFirebaseUrl = (onSave = () => {}) => {
-  const modal = document.createElement('div');
-  modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;";
-  modal.innerHTML = `
-    <div style="background:#fff; padding:1.5rem; border-radius:1rem; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-      <h3 style="margin:0 0 1rem 0; font-size:1.2rem; color:#333;">Firebase 연동</h3>
-      <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">Firebase Realtime Database URL을 입력하세요.<br><small>(예: https://my-project.firebaseio.com/words.json)</small></p>
-      <input type="url" id="url-input" value="${firebaseUrl}" placeholder="https://..." 
-        style="width:100%; padding:0.75rem; border:1.5px solid #e5e7eb; border-radius:0.5rem; 
-               font-size:0.85rem; box-sizing:border-box; margin-bottom:1rem;">
-      <div style="display:flex; gap:0.75rem;">
-        <button id="url-cancel" style="flex:1; padding:0.75rem; border:1.5px solid #d1d5db;
-          border-radius:0.5rem; background:#fff; cursor:pointer; font-size:0.9rem;">취소</button>
-        <button id="url-save" style="flex:2; padding:0.75rem; background:#a855f7; color:#fff;
-          border:none; border-radius:0.5rem; cursor:pointer; font-size:0.9rem; font-weight:600;">저장 후 동기화</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const input = document.getElementById('url-input');
-  input.focus();
-  input.select();
-
-  document.getElementById('url-cancel').onclick = () => modal.remove();
-  document.getElementById('url-save').onclick = () => {
-    const val = input.value.trim();
-    if (!val) return;
-    firebaseUrl = val;
-    localStorage.setItem('firebase_url', firebaseUrl);
-    modal.remove();
-    onSave();
-  };
-  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  await uploadToFirebase();
 };
 
 const syncWithFirebase = async () => {
-  if (!firebaseUrl) {
-    promptFirebaseUrl(syncWithFirebase);
-    return;
-  }
   const statusEl = document.getElementById('sync-status');
   if (statusEl) statusEl.innerText = '동기화 중...';
   
   try {
-    const response = await fetch(firebaseUrl);
-    if (!response.ok) throw new Error('Network error');
-    const remoteData = await response.json();
+    const dbRef = ref(db, 'words');
+    const snapshot = await get(dbRef);
+    const remoteData = snapshot.val();
     
     if (remoteData) {
       const remoteWordsMap = new Map();
@@ -148,19 +119,13 @@ const syncWithFirebase = async () => {
   } catch (err) {
     if (statusEl) statusEl.innerText = '동기화 실패';
     console.error('Firebase Sync failed', err);
-    firebaseUrl = ''; // reset on fail
-    localStorage.removeItem('firebase_url');
   }
 };
 
 const uploadToFirebase = async () => {
-  if (!firebaseUrl) return;
   try {
-    await fetch(firebaseUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(words)
-    });
+    const dbRef = ref(db, 'words');
+    await set(dbRef, words);
   } catch (err) {
     console.error('Failed to upload to Firebase', err);
   }
