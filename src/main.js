@@ -11,15 +11,11 @@ import './style.css'
 // --- State Management ---
 let words = JSON.parse(localStorage.getItem('voca_logs')) || [];
 let currentView = 'list'; // 'list', 'add', 'edit', 'detail'
-// 삭제한 단어 추적 (동기화 시 Firebase에서 복원되지 않도록)
-let deletedWords = new Set(JSON.parse(localStorage.getItem('deleted_words') || '[]'));
 
-// --- DOM Elements (lazy getters to avoid null on early load) ---
-const getAppMain = () => document.getElementById('main-content');
-const getViewTitle = () => document.getElementById('view-title');
-const getFabContainer = () => document.getElementById('fab-container');
-// 하위 호환성을 위한 참조
-let appMain, viewTitle, fabContainer;
+// --- DOM Elements ---
+const appMain = document.getElementById('main-content');
+const viewTitle = document.getElementById('view-title');
+const fabContainer = document.getElementById('fab-container');
 
 // --- Helper Icons ---
 const violetIconHTML = `
@@ -50,158 +46,125 @@ const homeIconHTML = `
   </svg>
 `;
 
-// --- Storage ---
+// --- Local Storage Integration ---
+
+// --- Google Drive Sync ---
+const CLIENT_ID = '323291505088-ngturlrabjrghami7gnc3shhkdlhhjvp.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+let tokenClient;
+let accessToken = null;
+let googleFileId = null;
+
 const saveToLocal = () => {
   localStorage.setItem('voca_logs', JSON.stringify(words));
 };
 
-// --- Firebase Sync (Netlify 프록시 경유 → CORS 없음) ---
-// /firebase-proxy/* → https://vocalog-d61ef-default-rtdb.firebaseio.com/*  (public/_redirects)
-const FIREBASE_ENDPOINT = '/firebase-proxy/vocaLog.json';
-
-const syncWithFirebase = async () => {
-  const btn = document.getElementById('btn-sync');
-  if (btn) btn.style.opacity = '0.5';
-
-  try {
-    // 1. 클라우드에서 현재 데이터 읽기
-    const getResp = await fetch(FIREBASE_ENDPOINT);
-    if (!getResp.ok) throw new Error(`읽기 오류 (${getResp.status})\nFirebase 규칙 확인: .read = true`);
-    const cloudData = await getResp.json();
-    const cloudWords = Array.isArray(cloudData) ? cloudData : [];
-
-    // 2. 양방향 병합 (삭제한 단어는 Firebase에서 복원하지 않음)
-    const localMap = new Map(words.map(w => [w.word, w]));
-    const newFromCloud = cloudWords.filter(w => !localMap.has(w.word) && !deletedWords.has(w.word));
-    const merged = [...newFromCloud, ...words];
-
-    // 3. 병합 결과 저장
-    const putResp = await fetch(FIREBASE_ENDPOINT, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(merged),
-    });
-    if (!putResp.ok) throw new Error(`쓰기 오류 (${putResp.status})\nFirebase 규칙 확인: .write = true`);
-
-    // 4. 로컬 업데이트 + 삭제 목록 초기화
-    words = merged;
-    saveToLocal();
-    deletedWords.clear();
-    localStorage.removeItem('deleted_words');
-    renderListView();
-    alert(`동기화 완료! (총 ${merged.length}개 단어)`);
-  } catch (err) {
-    console.error('Sync failed:', err);
-    alert(`동기화 실패\n${err.message}`);
-  } finally {
-    const btn2 = document.getElementById('btn-sync');
-    if (btn2) btn2.style.opacity = '1';
+const saveAll = async () => {
+  saveToLocal();
+  if (accessToken) {
+    await uploadToDrive();
   }
 };
 
-const saveAll = () => {
-  saveToLocal();
-  // 단어 저장 시엔 로컬만 저장 (동기화는 수동 버튼으로)
+// --- Drive API Helpers ---
+
+const initGoogleAuth = () => {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error) return;
+      accessToken = resp.access_token;
+      localStorage.setItem('google_access_token', accessToken);
+      document.getElementById('sync-status').innerText = '동기화 중...';
+      await syncWithDrive();
+    },
+  });
 };
 
-const showUrlModal = (onSave) => {
-  // 기존 모달 제거
-  document.getElementById('url-modal')?.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'url-modal';
-  modal.style.cssText = `
-    position:fixed; inset:0; background:rgba(0,0,0,0.5);
-    display:flex; align-items:center; justify-content:center;
-    z-index:999; padding:1.5rem;
-  `;
-  modal.innerHTML = `
-    <div style="background:#fff; border-radius:1rem; padding:1.5rem; width:100%; max-width:420px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
-      <h3 style="margin:0 0 0.5rem; font-size:1rem; color:#1e1b4b;">Firebase 동기화 URL 설정</h3>
-      <p style="margin:0 0 1rem; font-size:0.8rem; color:#6b7280;">
-        Firebase 콘솔 → Realtime Database → 데이터 탭 상단 URL<br>
-        예) https://vocalog-xxxxx-default-rtdb.firebaseio.com
-      </p>
-      <input id="url-input" type="url" placeholder="https://..." value="${firebaseUrl}"
-        style="width:100%; padding:0.75rem; border:1.5px solid #d1d5db; border-radius:0.5rem;
-               font-size:0.85rem; box-sizing:border-box; margin-bottom:1rem;">
-      <div style="display:flex; gap:0.75rem;">
-        <button id="url-cancel" style="flex:1; padding:0.75rem; border:1.5px solid #d1d5db;
-          border-radius:0.5rem; background:#fff; cursor:pointer; font-size:0.9rem;">취소</button>
-        <button id="url-save" style="flex:2; padding:0.75rem; background:#a855f7; color:#fff;
-          border:none; border-radius:0.5rem; cursor:pointer; font-size:0.9rem; font-weight:600;">저장 후 동기화</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const input = document.getElementById('url-input');
-  input.focus();
-  input.select();
-
-  document.getElementById('url-cancel').onclick = () => modal.remove();
-  document.getElementById('url-save').onclick = () => {
-    const val = input.value.trim();
-    if (!val) return;
-    firebaseUrl = val;
-    localStorage.setItem('firebase_url', firebaseUrl);
-    modal.remove();
-    onSave();
-  };
-  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+const handleAuthClick = () => {
+  tokenClient.requestAccessToken({ prompt: '' });
 };
 
-const handleSyncClick = () => {
-  syncWithFirebase();
+const syncWithDrive = async () => {
+  try {
+    const fileId = await findVocaFile();
+    if (fileId) {
+      googleFileId = fileId;
+      const driveData = await downloadFromDrive(fileId);
+      if (driveData && Array.isArray(driveData)) {
+        // Merge strategy: Drive data prepends to local if not present
+        const localWordsMap = new Map(words.map(w => [w.word, w]));
+        const newWords = driveData.filter(dw => !localWordsMap.has(dw.word));
+        words = [...newWords, ...words];
+        saveToLocal();
+        renderListView();
+      }
+    }
+    document.getElementById('sync-status').innerText = '동기화 완료';
+  } catch (err) {
+    console.error('Sync failed', err);
+    document.getElementById('sync-status').innerText = '동기화 실패';
+  }
+};
+
+const findVocaFile = async () => {
+  const resp = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='voca_logs.json' and trashed=false`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const data = await resp.json();
+  return data.files && data.files.length > 0 ? data.files[0].id : null;
+};
+
+const downloadFromDrive = async (fileId) => {
+  const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  return await resp.json();
+};
+
+const uploadToDrive = async () => {
+  const metadata = { name: 'voca_logs.json', mimeType: 'application/json' };
+  const file = new Blob([JSON.stringify(words)], { type: 'application/json' });
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', file);
+
+  let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  let method = 'POST';
+
+  if (googleFileId) {
+    url = `https://www.googleapis.com/upload/drive/v3/files/${googleFileId}?uploadType=multipart`;
+    method = 'PATCH';
+  }
+
+  const resp = await fetch(url, {
+    method,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form
+  });
+  const data = await resp.json();
+  if (!googleFileId) googleFileId = data.id;
 };
 
 // --- Helper: Pronunciation ---
-const speak = (text) => {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
-
-  const preferredNames = [
-    'Google US English',
-    'Microsoft David - English (United States)',
-    'Microsoft Zira - English (United States)',
-    'Samantha',
-    'Alex'
-  ];
-
-  let selectedVoice = voices.find(v => preferredNames.some(p => v.name.includes(p)))
-                   || voices.find(v => v.lang === 'en-US')
-                   || voices.find(v => v.lang.startsWith('en-US'))
-                   || voices.find(v => v.lang.startsWith('en'));
-
-  if (selectedVoice) utterance.voice = selectedVoice;
-  utterance.rate = 0.85;
-  utterance.pitch = 1.0;
-  window.speechSynthesis.speak(utterance);
-};
+// Removed
 
 // --- Views ---
-const bindSyncButton = () => {
-  const btn = document.getElementById('btn-sync');
-  if (!btn) return;
-  btn.title = '동기화';
-  btn.onclick = handleSyncClick;
-};
 
 const renderListView = () => {
   viewTitle.innerHTML = `
-    <div style="width: 10px;"></div>
+    <div style="width: 10px;"></div> <!-- Reduced left placeholder to shift title left -->
     <div style="display:flex; align-items:center; justify-content:flex-start; flex:1; padding-left: 10px;">
       ${violetIconHTML}
       <span style="margin-left:10px;">VocaLog</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="동기화">
+    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
       ${driveIconHTML}
     </button>
+    <div id="sync-status" style="display:none"></div>
   `;
-  bindSyncButton();
-
+  document.getElementById('btn-sync').onclick = handleAuthClick;
   let html = '<div class="view voca-list">';
   if (words.length === 0) {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
@@ -212,7 +175,6 @@ const renderListView = () => {
           <div style="display:flex; justify-content:space-between; align-items:start;">
             <div>
               <div class="voca-item-title">${w.word}</div>
-              <div class="voca-item-summary">${w.translation}</div>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted); margin-top:4px;"><path d="M9 18l6-6-6-6"></path></svg>
           </div>
@@ -234,16 +196,15 @@ const renderDetailView = (index) => {
       ${violetIconHTML}
       <span style="margin-left:10px;">단어정보</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="동기화">
+    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
       ${driveIconHTML}
     </button>
   `;
-  bindSyncButton();
+  document.getElementById('btn-sync').onclick = handleAuthClick;
   appMain.innerHTML = `
     <div class="view detail-view">
       <div class="detail-header">
         <h2>${w.word}</h2>
-        <button class="btn-pronounce" onclick="window.speak('${w.word}')">🔊</button>
       </div>
       <div class="section"><div class="section-label">어원</div><div class="section-content etymology">${w.etymology || '-'}</div></div>
       <div class="section"><div class="section-label">예문</div><div class="section-content example">${w.example || '-'}</div></div>
@@ -267,11 +228,11 @@ const renderFormView = (index = null) => {
       ${violetIconHTML}
       <span style="margin-left:10px;">${isEdit ? '수정하기' : '추가하기'}</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="동기화">
+    <button class="header-sync-btn" id="btn-sync" title="Google Drive Sync">
       ${driveIconHTML}
     </button>
   `;
-  bindSyncButton();
+  document.getElementById('btn-sync').onclick = handleAuthClick;
   appMain.innerHTML = `
     <div class="view form-view">
       <div class="form-group"><label>영어 단어</label><input type="text" id="input-word" value="${w.word}"></div>
@@ -289,14 +250,20 @@ const renderFAB = (type) => {
   if (type === 'add') document.getElementById('fab-add').onclick = () => window.navigateTo('add');
 };
 
-window.navigateTo = (view, data = null, isBack = false) => {
-  currentView = view;
-  if (!isBack) history.pushState({ view, data }, '', '');
-  if (view === 'list') renderListView();
-  else if (view === 'add' || view === 'edit') renderFormView(data);
-  else if (view === 'detail') renderDetailView(data);
+window.navigateTo = (view, data = null, isBack = false) => { 
+  currentView = view; 
+  
+  // Update browser history
+  if (!isBack) {
+    history.pushState({ view, data }, '', '');
+  }
+
+  if (view === 'list') renderListView(); 
+  else if (view === 'add' || view === 'edit') renderFormView(data); 
+  else if (view === 'detail') renderDetailView(data); 
 };
 
+// Handle browser back button
 window.onpopstate = (event) => {
   if (event.state && event.state.view) {
     window.navigateTo(event.state.view, event.state.data, true);
@@ -304,36 +271,20 @@ window.onpopstate = (event) => {
     window.navigateTo('list', null, true);
   }
 };
-
-window.saveWord = (index = null) => {
+window.saveWord =  (index = null) => {
   const word = document.getElementById('input-word').value;
   if (!word) return alert('단어를 입력해주세요.');
-  const data = {
-    word,
-    etymology: document.getElementById('input-etymology').value,
-    example: document.getElementById('input-example').value,
-    translation: document.getElementById('input-translation').value
-  };
+  const data = { word, etymology: document.getElementById('input-etymology').value, example: document.getElementById('input-example').value, translation: document.getElementById('input-translation').value };
   if (index !== null) words[index] = data; else words.unshift(data);
   saveAll();
   window.navigateTo('list');
 };
-
-window.deleteWord = (index) => {
-  if (confirm('삭제할까요?')) {
-    deletedWords.add(words[index].word);
-    localStorage.setItem('deleted_words', JSON.stringify([...deletedWords]));
-    words.splice(index, 1);
-    saveAll();
-    window.navigateTo('list');
-  }
-};
-window.speak = speak;
+window.deleteWord =  (index) => { if (confirm('삭제할까요?')) { words.splice(index, 1); saveAll(); window.navigateTo('list'); } };
 
 // --- Initialize ---
 window.onload = () => {
-  appMain = getAppMain();
-  viewTitle = getViewTitle();
-  fabContainer = getFabContainer();
+  if (window.google) {
+    initGoogleAuth();
+  }
   window.navigateTo('list');
 };
