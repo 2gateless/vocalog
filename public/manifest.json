@@ -2,7 +2,7 @@
   "name": "VocaLog - 영어 어원 메모장",
   "short_name": "VocaLog",
   "description": "영어 단어 어원과 활용 예문을 기록하는 프리미엄 메모장",
-  "start_url": "/",
+  "start_url": "/vocalog/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#6366f1",
