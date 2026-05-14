@@ -41,6 +41,14 @@ const driveIconHTML = `
   </svg>
 `;
 
+const archiveIconHTML = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26" style="color: white;">
+    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+    <rect x="1" y="3" width="22" height="5"></rect>
+    <line x1="10" y1="12" x2="14" y2="12"></line>
+  </svg>
+`;
+
 const homeIconHTML = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -158,6 +166,9 @@ const renderListView = () => {
       ${violetIconHTML}
       <span style="margin-left:10px;">VocaLog</span>
     </div>
+    <button class="header-storage-btn" onclick="window.navigateTo('storage')" title="단어창고">
+      ${archiveIconHTML}
+    </button>
     <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
@@ -165,11 +176,11 @@ const renderListView = () => {
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
   let html = '<div class="view voca-list">';
-  if (words.length === 0) {
+  if (words.length === 0 || !words.some(w => w && w.word && !w.archived)) {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
   } else {
     words.forEach((w, index) => {
-      if (!w || !w.word) return;
+      if (!w || !w.word || w.archived) return;
       html += `
         <div class="voca-item" onclick="window.navigateTo('detail', ${index})">
           <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -187,6 +198,40 @@ const renderListView = () => {
   html += '</div>';
   appMain.innerHTML = html;
   renderFAB('add');
+};
+
+const renderStorageView = () => {
+  viewTitle.innerHTML = `
+    <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home">
+      ${homeIconHTML}
+    </button>
+    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+      ${archiveIconHTML}
+      <span style="margin-left:10px;">단어창고</span>
+    </div>
+    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
+      ${driveIconHTML}
+    </button>
+  `;
+  document.getElementById('btn-sync').onclick = handleSyncClick;
+  let html = '<div class="view storage-list">';
+  let hasArchived = false;
+  words.forEach((w, index) => {
+    if (!w || !w.word || !w.archived) return;
+    hasArchived = true;
+    html += `
+      <div class="storage-item" onclick="window.navigateTo('detail', ${index})">
+        <div class="storage-item-title">${w.word}</div>
+        <div class="storage-item-summary">${w.translation}</div>
+      </div>`;
+  });
+  if (!hasArchived) {
+    html = '<div class="view"><div class="empty-state"><p>보관된 단어가 없습니다.</p></div></div>';
+  } else {
+    html += '</div>';
+  }
+  appMain.innerHTML = html;
+  renderFAB(null);
 };
 
 const renderDetailView = (index) => {
@@ -213,6 +258,7 @@ const renderDetailView = (index) => {
       <div class="section"><div class="section-label">예문</div><div class="section-content example">${w.example || '-'}</div></div>
       <div class="section"><div class="section-label">번역</div><div class="section-content translation">${w.translation || '-'}</div></div>
       <div class="detail-actions">
+        <button class="btn-archive" onclick="window.toggleArchive(${index})">${w.archived ? '단어장 복귀' : '창고로 이동'}</button>
         <button class="btn-pin" onclick="window.togglePin(${index})">${w.pinned ? '핀 해제' : '핀 고정'}</button>
         <button class="btn-edit" onclick="window.navigateTo('edit', ${index})">수정하기</button>
         <button class="btn-delete" onclick="window.deleteWord(${index})">삭제하기</button>
@@ -263,6 +309,7 @@ window.navigateTo = (view, data = null, isBack = false) => {
   }
 
   if (view === 'list') renderListView(); 
+  else if (view === 'storage') renderStorageView();
   else if (view === 'add' || view === 'edit') renderFormView(data); 
   else if (view === 'detail') renderDetailView(data); 
 };
@@ -286,14 +333,24 @@ window.saveWord =  (index = null) => {
   };
   if (index !== null) {
     data.pinned = words[index].pinned || false;
+    data.archived = words[index].archived || false;
     words[index] = data;
   } else {
     data.pinned = false;
+    data.archived = false;
     words.unshift(data);
   }
   sortWords();
   saveAll();
   window.navigateTo('list');
+};
+
+window.toggleArchive = (index) => {
+  words[index].archived = !words[index].archived;
+  if (words[index].archived) words[index].pinned = false;
+  sortWords();
+  saveAll();
+  window.navigateTo(words[index].archived ? 'storage' : 'list');
 };
 
 window.togglePin = (index) => {

@@ -338,12 +338,13 @@ main {
 /* Detail View Actions */
 .detail-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 2rem;
 }
 
 .detail-actions button {
-  flex: 1;
+  flex: 1 1 45%;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   border: none;
@@ -432,3 +433,73 @@ main {
   margin-bottom: 1rem;
   opacity: 0.5;
 }
+
+/* Storage View */
+.header-storage-btn {
+  position: absolute;
+  right: 4.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.header-storage-btn:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.storage-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.storage-item {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.storage-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.storage-item:active {
+  transform: scale(0.98);
+}
+
+.storage-item-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  word-break: break-all;
+}
+
+.storage-item-summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.btn-archive {
+  background: #64748b; /* Slate */
+  color: white;
+}
+
