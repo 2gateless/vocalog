@@ -69,6 +69,14 @@ const saveToLocal = () => {
   localStorage.setItem('voca_logs', JSON.stringify(words));
 };
 
+const sortWords = () => {
+  words.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0;
+  });
+};
+
 const saveAll = async () => {
   saveToLocal();
   await uploadToFirebase();
@@ -106,6 +114,7 @@ const syncWithFirebase = async () => {
       });
       
       words = Array.from(mergedMap.values());
+      sortWords();
       saveToLocal();
       
       // Push back up
@@ -167,7 +176,10 @@ const renderListView = () => {
             <div>
               <div class="voca-item-title">${w.word}</div>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted); margin-top:4px;"><path d="M9 18l6-6-6-6"></path></svg>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+              ${w.pinned ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>' : ''}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path d="M9 18l6-6-6-6"></path></svg>
+            </div>
           </div>
         </div>`;
     });
@@ -201,6 +213,7 @@ const renderDetailView = (index) => {
       <div class="section"><div class="section-label">예문</div><div class="section-content example">${w.example || '-'}</div></div>
       <div class="section"><div class="section-label">번역</div><div class="section-content translation">${w.translation || '-'}</div></div>
       <div class="detail-actions">
+        <button class="btn-pin" onclick="window.togglePin(${index})">${w.pinned ? '핀 해제' : '핀 고정'}</button>
         <button class="btn-edit" onclick="window.navigateTo('edit', ${index})">수정하기</button>
         <button class="btn-delete" onclick="window.deleteWord(${index})">삭제하기</button>
       </div>
@@ -265,8 +278,27 @@ window.onpopstate = (event) => {
 window.saveWord =  (index = null) => {
   const word = document.getElementById('input-word').value;
   if (!word) return alert('단어를 입력해주세요.');
-  const data = { word, etymology: document.getElementById('input-etymology').value, example: document.getElementById('input-example').value, translation: document.getElementById('input-translation').value };
-  if (index !== null) words[index] = data; else words.unshift(data);
+  const data = {
+    word,
+    etymology: document.getElementById('input-etymology').value,
+    example: document.getElementById('input-example').value,
+    translation: document.getElementById('input-translation').value
+  };
+  if (index !== null) {
+    data.pinned = words[index].pinned || false;
+    words[index] = data;
+  } else {
+    data.pinned = false;
+    words.unshift(data);
+  }
+  sortWords();
+  saveAll();
+  window.navigateTo('list');
+};
+
+window.togglePin = (index) => {
+  words[index].pinned = !words[index].pinned;
+  sortWords();
   saveAll();
   window.navigateTo('list');
 };

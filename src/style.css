@@ -357,6 +357,11 @@ main {
   transform: scale(0.95);
 }
 
+.btn-pin {
+  background: #f59e0b; /* Orange/Yellow for Pin */
+  color: white;
+}
+
 .btn-edit {
   background: #10b981; /* Green */
   color: white;
