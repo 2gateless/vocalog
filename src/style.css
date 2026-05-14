@@ -468,8 +468,9 @@ main {
   border-radius: 1rem;
   box-shadow: var(--shadow);
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 4.5rem; /* Ensure they have a consistent height */
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid rgba(255, 255, 255, 0.6);

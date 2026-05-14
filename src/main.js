@@ -222,7 +222,6 @@ const renderStorageView = () => {
     html += `
       <div class="storage-item" onclick="window.navigateTo('detail', ${index})">
         <div class="storage-item-title">${w.word}</div>
-        <div class="storage-item-summary">${w.translation}</div>
       </div>`;
   });
   if (!hasArchived) {
