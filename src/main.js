@@ -218,7 +218,7 @@ const renderLoginView = () => {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       console.error('Google Sign-in failed', err);
-      alert('로그인에 실패했습니다. 다시 시도해 주세요.');
+      alert('로그인 실패 상세 정보:\n\n에러 코드: ' + err.code + '\n에러 메시지: ' + err.message + '\n\n이 에러 코드를 알려주시면 신속히 해결해 드릴게요!');
     }
   };
 };
