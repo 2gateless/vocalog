@@ -9,10 +9,13 @@ window.addEventListener('error', (e) => {
 import './style.css'
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set } from "firebase/database";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
 
 // --- State Management ---
 let words = JSON.parse(localStorage.getItem('voca_logs')) || [];
 let currentView = 'list'; // 'list', 'add', 'edit', 'detail'
+let isAuthorized = false;
+let currentUser = null;
 
 // --- DOM Elements ---
 const appMain = document.getElementById('main-content');
@@ -70,6 +73,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 let deletedWords = new Set(JSON.parse(localStorage.getItem('deleted_words') || '[]'));
 
@@ -91,6 +96,10 @@ const saveAll = async () => {
 };
 
 const syncWithFirebase = async () => {
+  if (!isAuthorized) {
+    console.warn('Sync blocked: User not authorized.');
+    return;
+  }
   const statusEl = document.getElementById('sync-status');
   if (statusEl) statusEl.innerText = '동기화 중...';
   
@@ -142,6 +151,10 @@ const syncWithFirebase = async () => {
 };
 
 const uploadToFirebase = async () => {
+  if (!isAuthorized) {
+    console.warn('Upload blocked: User not authorized.');
+    return;
+  }
   try {
     const dbRef = ref(db, 'vocaLog');
     await set(dbRef, words);
@@ -156,6 +169,96 @@ const handleSyncClick = () => {
 
 // --- Helper: Pronunciation ---
 // Removed
+
+// --- Auth UI Icons & Views ---
+const googleIconHTML = `
+  <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+  </svg>
+`;
+
+const logoutIconHTML = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" style="color: white;">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+`;
+
+const renderLoginView = () => {
+  viewTitle.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+      ${violetIconHTML}
+      <span style="margin-left:10px;">VocaLog</span>
+    </div>
+  `;
+  fabContainer.innerHTML = '';
+  
+  appMain.innerHTML = `
+    <div class="auth-view">
+      <div class="auth-card">
+        <div class="auth-logo">
+          ${violetIconHTML}
+        </div>
+        <h2 class="auth-title">VocaLog</h2>
+        <p class="auth-subtitle">영어 어원 메모장</p>
+        <button class="btn-google" id="btn-login-google">
+          ${googleIconHTML}
+          <span>Google 계정으로 로그인</span>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('btn-login-google').onclick = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Google Sign-in failed', err);
+      alert('로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+  };
+};
+
+const renderUnauthorizedView = (email) => {
+  viewTitle.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+      ${violetIconHTML}
+      <span style="margin-left:10px;">VocaLog</span>
+    </div>
+  `;
+  fabContainer.innerHTML = '';
+  
+  appMain.innerHTML = `
+    <div class="auth-view">
+      <div class="unauthorized-card">
+        <svg class="auth-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="56" height="56">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <h2>접근 권한 없음</h2>
+        <div class="unauthorized-text">
+          <strong>2gateless@gmail.com</strong> 계정으로 로그인한 사용자만 이 단어장을 읽고 쓸 수 있습니다.<br><br>
+          현재 로그인 계정:<br>
+          <span style="word-break: break-all; color: #ef4444; font-weight: 600;">${email}</span>
+        </div>
+        <button class="btn-auth-secondary" id="btn-switch-account">다른 계정으로 로그인</button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('btn-switch-account').onclick = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Sign out failed', err);
+    }
+  };
+};
 
 // --- Views ---
 
@@ -172,9 +275,13 @@ const renderListView = () => {
     <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
+    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 7.5rem;">
+      ${logoutIconHTML}
+    </button>
     <div id="sync-status" style="display:none"></div>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
+  document.getElementById('btn-logout').onclick = () => signOut(auth);
   let html = '<div class="view voca-list">';
   if (words.length === 0 || !words.some(w => w && w.word && !w.archived)) {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
@@ -212,8 +319,12 @@ const renderStorageView = () => {
     <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
+    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
+      ${logoutIconHTML}
+    </button>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
+  document.getElementById('btn-logout').onclick = () => signOut(auth);
   let html = '<div class="view storage-list">';
   let hasArchived = false;
   words.forEach((w, index) => {
@@ -246,8 +357,12 @@ const renderDetailView = (index) => {
     <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
+    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
+      ${logoutIconHTML}
+    </button>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
+  document.getElementById('btn-logout').onclick = () => signOut(auth);
   appMain.innerHTML = `
     <div class="view detail-view">
       <div class="detail-header">
@@ -280,8 +395,12 @@ const renderFormView = (index = null) => {
     <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
       ${driveIconHTML}
     </button>
+    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
+      ${logoutIconHTML}
+    </button>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
+  document.getElementById('btn-logout').onclick = () => signOut(auth);
   appMain.innerHTML = `
     <div class="view form-view">
       <div class="form-group"><label>영어 단어</label><input type="text" id="input-word" value="${w.word}"></div>
@@ -300,6 +419,15 @@ const renderFAB = (type) => {
 };
 
 window.navigateTo = (view, data = null, isBack = false) => { 
+  if (!isAuthorized) {
+    if (currentUser) {
+      renderUnauthorizedView(currentUser.email);
+    } else {
+      renderLoginView();
+    }
+    return;
+  }
+
   currentView = view; 
   
   // Update browser history
@@ -369,5 +497,21 @@ window.deleteWord =  (index) => {
 };
 
 // --- Initialize ---
-window.navigateTo('list');
-syncWithFirebase();
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    if (user.email === '2gateless@gmail.com') {
+      currentUser = user;
+      isAuthorized = true;
+      syncWithFirebase();
+      window.navigateTo(currentView);
+    } else {
+      currentUser = user;
+      isAuthorized = false;
+      renderUnauthorizedView(user.email);
+    }
+  } else {
+    currentUser = null;
+    isAuthorized = false;
+    renderLoginView();
+  }
+});
