@@ -1,26 +1,26 @@
 :root {
-  /* Airbnb Design Tokens - Warm Paper & Notebook Theme (눈이 편안한 미색지 감성) */
-  --primary: #ff385c;            /* Airbnb Rausch (따뜻한 종이 위에서 예쁘게 돋보이는 레드) */
+  /* Airbnb Design Tokens - Vintage Ruled Paper Theme (흰색 느낌을 완전히 걷어낸 감성 단어장) */
+  --primary: #ff385c;            /* Airbnb Rausch (따뜻한 빈티지 종이 위에서 예쁘게 대비되는 포인트 레드) */
   --primary-soft: #ff5a79;       /* Hover state */
   --primary-deep: #e00b41;       /* Active / Pressed state */
   --primary-disabled: #ffd1da;   /* Disabled state */
   --on-primary: #ffffff;
   
-  /* Espresso & Warm Charcoal instead of harsh black to minimize eye strain */
-  --ink: #332f27;                /* 깊은 에스프레소 브라운 (연필/잉크 텍스트 느낌) */
-  --ink-strong: #23201a;
-  --body: #4e483e;               /* 부드러운 웜 브라운 그레이 */
-  --mute: #7c7569;               /* 빛바랜 브라운 캡션 컬러 */
-  --mute-soft: #a8a092;
+  /* Espresso Brown & Charcoal instead of harsh black for absolute eye comfort */
+  --ink: #3b3224;                /* 깊은 빈티지 잉크 브라운 */
+  --ink-strong: #2a2216;
+  --body: #594f3f;               /* 연필 글씨 느낌의 웜 브라운 그레이 */
+  --mute: #877b69;               /* 빛바랜 브라운 그레이 */
+  --mute-soft: #b2a795;
   
-  --hairline: #e6e0d3;           /* 부드러운 크라프트/우드 베이지 구분선 */
-  --hairline-soft: #f2ede2;
+  --hairline: #dfd5be;           /* 아날로그 노트 가장자리 느낌의 우드 베이지 테두리 */
+  --hairline-soft: #f0ebd9;
   
-  /* Cozy Paper Canvases */
-  --canvas: #fdfbf7;             /* 따뜻한 미색지/우유빛 한지 캔버스 */
-  --canvas-soft: #f6f2e7;        /* 조금 더 깊은 크림 베이지 재생지 톤 */
-  --canvas-strong: #ebe5d7;      /* 음영을 위한 차분한 샌드 톤 */
-  --canvas-text-soft: #635c51;
+  /* Cozy Paper Canvases - Strictly Non-White */
+  --canvas: #f8f3e5;             /* 흰색을 완전히 배제한 아늑하고 정갈한 미색 갱지/한지 캔버스 */
+  --canvas-soft: #eedfb8;        /* 조금 더 깊은 크라프트/재생 황색지 톤 */
+  --canvas-strong: #e2d1a3;      /* 음영을 강조하는 따뜻한 샌드 톤 */
+  --canvas-text-soft: #6e614d;
   
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, Courier, monospace;
@@ -35,7 +35,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #f4f0e6; /* 따뜻하고 눈이 편안한 페이퍼 데스크 배경 */
+  background-color: #ebdcb9; /* 낡은 목재 도서관 책상이나 두꺼운 가죽 매트 감성의 짙은 웜 샌드 배경 */
   color: var(--ink);
   line-height: 1.5;
   overflow-x: hidden;
@@ -52,19 +52,24 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas); /* #fdfbf7 (Cozy Paper) */
+  background: var(--canvas); /* #f8f3e5 (Vintage Cozy Paper) */
+  
+  /* Subtly ruled lined notebook pattern to give organic paper texture */
+  background-image: linear-gradient(rgba(223, 213, 190, 0.25) 1px, transparent 1px);
+  background-size: 100% 28px;
+  
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
-  /* Airbnb Rest elevation shadow - Softer warm shade */
-  box-shadow: rgba(51, 47, 39, 0.02) 0px 0px 0px 1px, 
-              rgba(51, 47, 39, 0.05) 0px 4px 20px;
+  /* Airbnb Rest elevation shadow - Matched with vintage shades */
+  box-shadow: rgba(59, 50, 36, 0.05) 0px 0px 0px 1px, 
+              rgba(59, 50, 36, 0.08) 0px 8px 30px;
   position: relative;
 }
 
-/* Header */
+/* Header - Matches Vintage Paper */
 .app-header {
   padding: 1.25rem 1.5rem;
-  background: rgba(253, 251, 247, 0.98); /* Matching Cozy Paper */
+  background: rgba(248, 243, 229, 0.98); /* Matching Cozy Paper */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   position: sticky;
@@ -103,7 +108,7 @@ body {
 
 .header-sync-btn:hover, .header-home-btn:hover, .header-storage-btn:hover, .header-logout-btn:hover {
   color: var(--ink);
-  background: var(--canvas-soft); /* Cream hover bg */
+  background: var(--canvas-soft); /* Vintage gold-yellow hover */
 }
 
 .header-sync-btn:active, .header-home-btn:active, .header-storage-btn:active, .header-logout-btn:active {
@@ -124,7 +129,7 @@ main {
   padding-bottom: 7rem; /* Space for FAB */
   display: flex;
   flex-direction: column;
-  background: var(--canvas); /* Seamless paper flow */
+  background: transparent; /* Allows lined notebook pattern to flow seamlessly */
 }
 
 /* View Animations */
@@ -154,20 +159,22 @@ main {
 }
 
 .voca-item {
-  background: var(--canvas); /* Seamless cozy white paper */
+  background: rgba(248, 243, 229, 0.95); /* Semi-transparent warm paper */
   padding: 1.25rem 1.5rem;
   border-radius: 14px; /* rounded.md */
-  border: 1px solid var(--hairline); /* Soft cream brown border */
+  border: 1px solid var(--hairline); /* Wooden brown border */
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  /* Subtly floats over the notebook line */
+  box-shadow: rgba(59, 50, 36, 0.02) 0px 2px 6px;
 }
 
 .voca-item:hover {
   border-color: var(--primary-soft);
   /* Light warm-tinted floating shadow */
   box-shadow: rgba(255, 56, 92, 0.04) 0px 0px 0px 1px, 
-              rgba(51, 47, 39, 0.03) 0px 4px 8px, 
-              rgba(51, 47, 39, 0.06) 0px 8px 24px;
+              rgba(59, 50, 36, 0.04) 0px 4px 10px, 
+              rgba(59, 50, 36, 0.08) 0px 8px 24px;
   transform: translateY(-2px);
 }
 
@@ -182,16 +189,16 @@ main {
   letter-spacing: -0.3px;
 }
 
-/* Detail & Form Views (Seamless with warm page) */
+/* Detail & Form Views (Seamless with warm paper) */
 .detail-view, .form-view {
-  background: var(--canvas);
+  background: var(--canvas); /* Cozy warm paper */
   padding: 1.75rem;
   border-radius: 14px; /* rounded.md */
   border: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: rgba(51, 47, 39, 0.02) 0px 4px 16px;
+  box-shadow: rgba(59, 50, 36, 0.03) 0px 6px 20px;
 }
 
 .detail-header {
@@ -221,12 +228,12 @@ main {
   letter-spacing: 1px;
 }
 
-/* Beautiful notebook paper row style with zero eye strain */
+/* Beautiful notebook paper row style - High contrast but extremely easy on eyes */
 .section-content {
   font-size: 1rem;
   color: var(--body);
-  background: var(--canvas-soft); /* Warm cream beige (#f6f2e7) */
-  border: 1px solid var(--hairline); /* Seamless warm border */
+  background: #f1ebd8; /* Deeper vintage kraft paper shade (#f1ebd8) */
+  border: 1px solid var(--hairline);
   padding: 1rem;
   border-radius: 8px; /* rounded.sm */
   line-height: 1.6;
@@ -240,15 +247,15 @@ main {
 
 .example {
   border-left: 3px solid var(--primary);
-  background: rgba(255, 56, 92, 0.015); /* Rausch 1.5% warm tint */
+  background: rgba(255, 56, 92, 0.02); /* Rausch 2% warm tint */
 }
 
 .translation {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--primary);
-  background: rgba(255, 56, 92, 0.03); /* Rausch 3% warm tint */
-  border-color: rgba(255, 56, 92, 0.1);
+  background: rgba(255, 56, 92, 0.04); /* Rausch 4% warm tint */
+  border-color: rgba(255, 56, 92, 0.15);
 }
 
 /* Form View */
@@ -265,12 +272,12 @@ main {
   letter-spacing: 0.5px;
 }
 
-/* Airbnb text-input style - Beautiful Warm Paper Integration */
+/* Input Fields - Embedded on Cozy Paper */
 .form-group input, .form-group textarea {
   width: 100%;
   padding: 1rem;
-  background: var(--canvas); /* Cozy warm #fdfbf7 */
-  border: 1px solid var(--hairline); /* Cozy soft wood border */
+  background: #f5eedc; /* Darker off-white paper shade so fields stand out beautifully */
+  border: 1px solid var(--hairline);
   border-radius: 8px; /* rounded.sm */
   font-size: 1rem;
   color: var(--ink-strong);
@@ -288,7 +295,7 @@ main {
   outline: none;
   border: 2px solid var(--primary);
   padding: calc(1rem - 1px); /* Offset padding to prevent sizing jump */
-  box-shadow: rgba(255, 56, 92, 0.04) 0px 0px 0px 3px;
+  box-shadow: rgba(255, 56, 92, 0.06) 0px 0px 0px 3px;
 }
 
 /* Form Buttons */
@@ -332,7 +339,7 @@ main {
   border-radius: 8px; /* rounded.sm */
   cursor: pointer;
   transition: all 0.2s;
-  background: var(--canvas);
+  background: #f5eedc; /* Darker paper background */
   border: 1px solid var(--hairline);
   color: var(--ink);
   display: flex;
@@ -351,12 +358,12 @@ main {
 
 /* Cozy subtle color accents on secondary buttons */
 .detail-actions .btn-pin {
-  border-color: rgba(217, 119, 6, 0.25);
-  color: #b45309; /* Deep warm amber */
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #92400e; /* Solid wood amber */
 }
 .detail-actions .btn-pin:hover {
-  background: rgba(217, 119, 6, 0.02);
-  border-color: #b45309;
+  background: rgba(217, 119, 6, 0.05);
+  border-color: #92400e;
 }
 
 .detail-actions .btn-archive {
@@ -370,21 +377,21 @@ main {
 }
 
 .detail-actions .btn-edit {
-  border-color: rgba(255, 56, 92, 0.15);
+  border-color: rgba(255, 56, 92, 0.2);
   color: var(--primary);
 }
 .detail-actions .btn-edit:hover {
-  background: rgba(255, 56, 92, 0.02);
+  background: rgba(255, 56, 92, 0.04);
   border-color: var(--primary);
 }
 
 .detail-actions .btn-delete {
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #991b1b;
 }
 .detail-actions .btn-delete:hover {
-  background: rgba(239, 68, 68, 0.03);
-  border-color: #b91c1c;
+  background: rgba(239, 68, 68, 0.04);
+  border-color: #991b1b;
 }
 
 /* Storage View */
@@ -395,7 +402,7 @@ main {
 }
 
 .storage-item {
-  background: var(--canvas);
+  background: rgba(248, 243, 229, 0.95);
   padding: 1.25rem 1rem;
   border-radius: 14px; /* rounded.md */
   border: 1px solid var(--hairline);
@@ -406,6 +413,7 @@ main {
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  box-shadow: rgba(59, 50, 36, 0.02) 0px 2px 6px;
 }
 
 .storage-item:hover {
@@ -501,7 +509,7 @@ main {
   border: 1px solid var(--hairline);
   padding: 3rem 2rem;
   border-radius: 14px; /* rounded.md */
-  box-shadow: rgba(51, 47, 39, 0.02) 0px 10px 30px;
+  box-shadow: rgba(59, 50, 36, 0.05) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -544,7 +552,7 @@ main {
   gap: 12px;
   width: 100%;
   padding: 0.85rem 1.25rem;
-  background: var(--canvas);
+  background: #f5eedc;
   color: var(--ink);
   border: 1px solid var(--hairline);
   border-radius: 8px; /* rounded.sm */
@@ -571,7 +579,7 @@ main {
   border: 1px solid rgba(239, 68, 68, 0.2);
   padding: 2.5rem 2rem;
   border-radius: 14px;
-  box-shadow: rgba(51, 47, 39, 0.02) 0px 10px 30px;
+  box-shadow: rgba(59, 50, 36, 0.05) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -601,7 +609,7 @@ main {
 .btn-auth-secondary {
   width: 100%;
   padding: 0.8rem;
-  background: var(--canvas);
+  background: #f5eedc;
   border: 1px solid var(--hairline);
   color: var(--mute);
   border-radius: 8px;
@@ -623,7 +631,7 @@ main {
   padding: 2.5rem 1rem;
   margin-top: auto;
   border-top: 1px solid var(--hairline);
-  background: var(--canvas-soft);
+  background: rgba(223, 213, 190, 0.15);
 }
 
 .app-footer p {
@@ -632,7 +640,7 @@ main {
   letter-spacing: 0.5px;
 }
 
-/* Markdown Custom Styling for Cozy Theme */
+/* Markdown Custom Styling for Vintage Cozy Theme */
 .section-content p {
   margin-bottom: 0.5rem;
 }
@@ -669,7 +677,7 @@ main {
 }
 
 .section-content pre {
-  background: var(--canvas-soft);
+  background: #f1ebd8;
   border: 1px solid var(--hairline);
   padding: 0.75rem 1rem;
   border-radius: 8px;
