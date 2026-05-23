@@ -69,18 +69,18 @@ const fabContainer = document.getElementById('fab-container');
 // --- Helper Icons ---
 const violetIconHTML = `
   <svg class="violet-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" fill="#a855f7" fill-opacity="0.1"/>
-    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="#e9d5ff" stroke="#a855f7" stroke-width="1.5"/>
-    <path d="M12 12C12 14.2091 10.2091 16 8 16C5.79086 16 4 14.2091 4 12C4 9.79086 5.79086 8 8 8C10.2091 8 12 9.79086 12 12Z" fill="#e9d5ff" stroke="#a855f7" stroke-width="1.5"/>
-    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="#e9d5ff" stroke="#a855f7" stroke-width="1.5"/>
-    <path d="M12 12C9.79086 12 8 13.7909 8 16C8 18.2091 9.79086 20 12 20C14.2091 20 16 18.2091 16 16C16 13.7909 14.2091 12 12 12Z" fill="#e9d5ff" stroke="#a855f7" stroke-width="1.5"/>
-    <circle cx="12" cy="12" r="2.5" fill="#a855f7"/>
-    <path d="M12 22V16" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" fill="var(--primary)" fill-opacity="0.1"/>
+    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 14.2091 10.2091 16 8 16C5.79086 16 4 14.2091 4 12C4 9.79086 5.79086 8 8 8C10.2091 8 12 9.79086 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="2.5" fill="var(--primary)"/>
+    <path d="M12 22V16" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
 `;
 
 const driveIconHTML = `
-  <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="30" height="30" style="color: white;">
+  <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
     <path d="M21 2v6h-6"></path>
     <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
     <path d="M3 22v-6h6"></path>
@@ -89,7 +89,7 @@ const driveIconHTML = `
 `;
 
 const archiveIconHTML = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26" style="color: white;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
     <polyline points="21 8 21 21 3 21 3 8"></polyline>
     <rect x="1" y="3" width="22" height="5"></rect>
     <line x1="10" y1="12" x2="14" y2="12"></line>
@@ -97,7 +97,7 @@ const archiveIconHTML = `
 `;
 
 const homeIconHTML = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
     <polyline points="9 22 9 12 15 12 15 22"></polyline>
   </svg>
@@ -225,7 +225,7 @@ const googleIconHTML = `
 `;
 
 const logoutIconHTML = `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" style="color: white;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
     <polyline points="16 17 21 12 16 7"></polyline>
     <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -234,9 +234,9 @@ const logoutIconHTML = `
 
 const renderLoginView = () => {
   viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+    <div style="display:flex; align-items:center; justify-content:center; flex:1; gap:8px;">
       ${violetIconHTML}
-      <span style="margin-left:10px;">VocaLog</span>
+      <span>VocaLog</span>
     </div>
   `;
   fabContainer.innerHTML = '';
@@ -269,9 +269,9 @@ const renderLoginView = () => {
 
 const renderUnauthorizedView = (email) => {
   viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+    <div style="display:flex; align-items:center; justify-content:center; flex:1; gap:8px;">
       ${violetIconHTML}
-      <span style="margin-left:10px;">VocaLog</span>
+      <span>VocaLog</span>
     </div>
   `;
   fabContainer.innerHTML = '';
@@ -308,20 +308,21 @@ const renderUnauthorizedView = (email) => {
 
 const renderListView = () => {
   viewTitle.innerHTML = `
-    <div style="width: 10px;"></div> <!-- Reduced left placeholder to shift title left -->
-    <div style="display:flex; align-items:center; justify-content:flex-start; flex:1; padding-left: 10px;">
+    <div style="display:flex; align-items:center; gap:8px; flex:1;">
       ${violetIconHTML}
-      <span style="margin-left:10px;">VocaLog</span>
+      <span style="font-weight:700;">VocaLog</span>
     </div>
-    <button class="header-storage-btn" onclick="window.navigateTo('storage')" title="단어창고">
-      ${archiveIconHTML}
-    </button>
-    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-      ${driveIconHTML}
-    </button>
-    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 7.5rem;">
-      ${logoutIconHTML}
-    </button>
+    <div style="display:flex; align-items:center; gap:4px;">
+      <button class="header-storage-btn" onclick="window.navigateTo('storage')" title="단어창고">
+        ${archiveIconHTML}
+      </button>
+      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
+        ${driveIconHTML}
+      </button>
+      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
+        ${logoutIconHTML}
+      </button>
+    </div>
     <div id="sync-status" style="display:none"></div>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
@@ -334,13 +335,13 @@ const renderListView = () => {
       if (!w || !w.word || w.archived) return;
       html += `
         <div class="voca-item" onclick="window.navigateTo('detail', ${index})">
-          <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <div class="voca-item-title">${w.word}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-              ${w.pinned ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>' : ''}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);"><path d="M9 18l6-6-6-6"></path></svg>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${w.pinned ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>' : ''}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--mute);"><path d="M9 18l6-6-6-6"></path></svg>
             </div>
           </div>
         </div>`;
@@ -353,19 +354,20 @@ const renderListView = () => {
 
 const renderStorageView = () => {
   viewTitle.innerHTML = `
-    <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home">
-      ${homeIconHTML}
-    </button>
-    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
-      ${archiveIconHTML}
-      <span style="margin-left:10px;">단어창고</span>
+    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home" style="padding:0; margin:0;">
+        ${homeIconHTML}
+      </button>
+      <span style="font-weight:700;">단어창고</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-      ${driveIconHTML}
-    </button>
-    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
-      ${logoutIconHTML}
-    </button>
+    <div style="display:flex; align-items:center; gap:4px;">
+      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
+        ${driveIconHTML}
+      </button>
+      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
+        ${logoutIconHTML}
+      </button>
+    </div>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
   document.getElementById('btn-logout').onclick = () => signOut(auth);
@@ -391,19 +393,20 @@ const renderStorageView = () => {
 const renderDetailView = (index) => {
   const w = words[index];
   viewTitle.innerHTML = `
-    <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home">
-      ${homeIconHTML}
-    </button>
-    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
-      ${violetIconHTML}
-      <span style="margin-left:10px;">단어정보</span>
+    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home" style="padding:0; margin:0;">
+        ${homeIconHTML}
+      </button>
+      <span style="font-weight:700;">단어정보</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-      ${driveIconHTML}
-    </button>
-    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
-      ${logoutIconHTML}
-    </button>
+    <div style="display:flex; align-items:center; gap:4px;">
+      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
+        ${driveIconHTML}
+      </button>
+      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
+        ${logoutIconHTML}
+      </button>
+    </div>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
   document.getElementById('btn-logout').onclick = () => signOut(auth);
@@ -429,19 +432,20 @@ const renderFormView = (index = null) => {
   const isEdit = index !== null;
   const w = isEdit ? words[index] : { word: '', etymology: '', example: '', translation: '' };
   viewTitle.innerHTML = `
-    <button class="header-home-btn" onclick="window.navigateTo('list')" title="Cancel">
-      ${homeIconHTML}
-    </button>
-    <div style="display:flex; align-items:center; justify-content:center; flex:1;">
-      ${violetIconHTML}
-      <span style="margin-left:10px;">${isEdit ? '수정하기' : '추가하기'}</span>
+    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Cancel" style="padding:0; margin:0;">
+        ${homeIconHTML}
+      </button>
+      <span style="font-weight:700;">${isEdit ? '수정하기' : '추가하기'}</span>
     </div>
-    <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-      ${driveIconHTML}
-    </button>
-    <button class="header-logout-btn" id="btn-logout" title="로그아웃" style="right: 4.5rem;">
-      ${logoutIconHTML}
-    </button>
+    <div style="display:flex; align-items:center; gap:4px;">
+      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
+        ${driveIconHTML}
+      </button>
+      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
+        ${logoutIconHTML}
+      </button>
+    </div>
   `;
   document.getElementById('btn-sync').onclick = handleSyncClick;
   document.getElementById('btn-logout').onclick = () => signOut(auth);
