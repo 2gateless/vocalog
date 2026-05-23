@@ -1,24 +1,26 @@
 :root {
-  /* Airbnb Design Tokens - Brightened & Smoothened */
-  --primary: #ff385c;            /* Airbnb Rausch */
+  /* Airbnb Design Tokens - Warm Paper & Notebook Theme (눈이 편안한 미색지 감성) */
+  --primary: #ff385c;            /* Airbnb Rausch (따뜻한 종이 위에서 예쁘게 돋보이는 레드) */
   --primary-soft: #ff5a79;       /* Hover state */
   --primary-deep: #e00b41;       /* Active / Pressed state */
   --primary-disabled: #ffd1da;   /* Disabled state */
   --on-primary: #ffffff;
   
-  --ink: #222222;                /* Near-black text */
-  --ink-strong: #222222;
-  --body: #484848;               /* Smoothened dark gray for body text */
-  --mute: #717171;               /* Muted, secondary labels */
-  --mute-soft: #b0b0b0;
+  /* Espresso & Warm Charcoal instead of harsh black to minimize eye strain */
+  --ink: #332f27;                /* 깊은 에스프레소 브라운 (연필/잉크 텍스트 느낌) */
+  --ink-strong: #23201a;
+  --body: #4e483e;               /* 부드러운 웜 브라운 그레이 */
+  --mute: #7c7569;               /* 빛바랜 브라운 캡션 컬러 */
+  --mute-soft: #a8a092;
   
-  --hairline: #ebebeb;           /* Ultra-soft light gray border */
-  --hairline-soft: #f7f7f7;
+  --hairline: #e6e0d3;           /* 부드러운 크라프트/우드 베이지 구분선 */
+  --hairline-soft: #f2ede2;
   
-  --canvas: #ffffff;             /* Pure white canvas */
-  --canvas-soft: #fafafa;        /* Very bright off-white for soft surface */
-  --canvas-strong: #f7f7f7;      /* Subtle gray fill */
-  --canvas-text-soft: #555555;
+  /* Cozy Paper Canvases */
+  --canvas: #fdfbf7;             /* 따뜻한 미색지/우유빛 한지 캔버스 */
+  --canvas-soft: #f6f2e7;        /* 조금 더 깊은 크림 베이지 재생지 톤 */
+  --canvas-strong: #ebe5d7;      /* 음영을 위한 차분한 샌드 톤 */
+  --canvas-text-soft: #635c51;
   
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, Courier, monospace;
@@ -33,7 +35,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #fafafa; /* Bright, clean milk-white page floor */
+  background-color: #f4f0e6; /* 따뜻하고 눈이 편안한 페이퍼 데스크 배경 */
   color: var(--ink);
   line-height: 1.5;
   overflow-x: hidden;
@@ -50,19 +52,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas); /* #ffffff */
+  background: var(--canvas); /* #fdfbf7 (Cozy Paper) */
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
-  /* Airbnb Rest elevation shadow - Extremely soft & clean */
-  box-shadow: rgba(0, 0, 0, 0.01) 0px 0px 0px 1px, 
-              rgba(0, 0, 0, 0.03) 0px 4px 16px;
+  /* Airbnb Rest elevation shadow - Softer warm shade */
+  box-shadow: rgba(51, 47, 39, 0.02) 0px 0px 0px 1px, 
+              rgba(51, 47, 39, 0.05) 0px 4px 20px;
   position: relative;
 }
 
 /* Header */
 .app-header {
   padding: 1.25rem 1.5rem;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(253, 251, 247, 0.98); /* Matching Cozy Paper */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   position: sticky;
@@ -101,7 +103,7 @@ body {
 
 .header-sync-btn:hover, .header-home-btn:hover, .header-storage-btn:hover, .header-logout-btn:hover {
   color: var(--ink);
-  background: var(--canvas-soft); /* Extremely bright hover bg */
+  background: var(--canvas-soft); /* Cream hover bg */
 }
 
 .header-sync-btn:active, .header-home-btn:active, .header-storage-btn:active, .header-logout-btn:active {
@@ -122,7 +124,7 @@ main {
   padding-bottom: 7rem; /* Space for FAB */
   display: flex;
   flex-direction: column;
-  background: var(--canvas); /* Seamless with app canvas */
+  background: var(--canvas); /* Seamless paper flow */
 }
 
 /* View Animations */
@@ -152,20 +154,20 @@ main {
 }
 
 .voca-item {
-  background: var(--canvas); /* Seamless white */
+  background: var(--canvas); /* Seamless cozy white paper */
   padding: 1.25rem 1.5rem;
   border-radius: 14px; /* rounded.md */
-  border: 1px solid var(--hairline); /* Ultra soft border */
+  border: 1px solid var(--hairline); /* Soft cream brown border */
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .voca-item:hover {
   border-color: var(--primary-soft);
-  /* Light Rausch-tinted floating shadow */
-  box-shadow: rgba(255, 56, 92, 0.03) 0px 0px 0px 1px, 
-              rgba(0, 0, 0, 0.02) 0px 4px 8px, 
-              rgba(0, 0, 0, 0.05) 0px 8px 20px;
+  /* Light warm-tinted floating shadow */
+  box-shadow: rgba(255, 56, 92, 0.04) 0px 0px 0px 1px, 
+              rgba(51, 47, 39, 0.03) 0px 4px 8px, 
+              rgba(51, 47, 39, 0.06) 0px 8px 24px;
   transform: translateY(-2px);
 }
 
@@ -180,16 +182,16 @@ main {
   letter-spacing: -0.3px;
 }
 
-/* Detail & Form Views (Seamless with background) */
+/* Detail & Form Views (Seamless with warm page) */
 .detail-view, .form-view {
-  background: var(--canvas); /* Seamless pure white */
+  background: var(--canvas);
   padding: 1.75rem;
   border-radius: 14px; /* rounded.md */
   border: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: rgba(0, 0, 0, 0.01) 0px 4px 16px; /* Ultra subtle shadow */
+  box-shadow: rgba(51, 47, 39, 0.02) 0px 4px 16px;
 }
 
 .detail-header {
@@ -219,12 +221,12 @@ main {
   letter-spacing: 1px;
 }
 
-/* Bright & Soft section-content to reduce contrast difference */
+/* Beautiful notebook paper row style with zero eye strain */
 .section-content {
   font-size: 1rem;
   color: var(--body);
-  background: var(--canvas-soft); /* Extremely soft off-white #fafafa */
-  border: 1px solid var(--hairline); /* Soft border instead of strong contrast */
+  background: var(--canvas-soft); /* Warm cream beige (#f6f2e7) */
+  border: 1px solid var(--hairline); /* Seamless warm border */
   padding: 1rem;
   border-radius: 8px; /* rounded.sm */
   line-height: 1.6;
@@ -238,14 +240,14 @@ main {
 
 .example {
   border-left: 3px solid var(--primary);
-  background: rgba(255, 56, 92, 0.01); /* Rausch 1% tint (nearly invisible but warm) */
+  background: rgba(255, 56, 92, 0.015); /* Rausch 1.5% warm tint */
 }
 
 .translation {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--primary);
-  background: rgba(255, 56, 92, 0.02); /* Rausch 2% tint */
+  background: rgba(255, 56, 92, 0.03); /* Rausch 3% warm tint */
   border-color: rgba(255, 56, 92, 0.1);
 }
 
@@ -263,12 +265,12 @@ main {
   letter-spacing: 0.5px;
 }
 
-/* Airbnb text-input style - Brightened & Smoothened */
+/* Airbnb text-input style - Beautiful Warm Paper Integration */
 .form-group input, .form-group textarea {
   width: 100%;
   padding: 1rem;
-  background: var(--canvas); /* Seamless white #ffffff */
-  border: 1px solid var(--hairline); /* Gentle gray border */
+  background: var(--canvas); /* Cozy warm #fdfbf7 */
+  border: 1px solid var(--hairline); /* Cozy soft wood border */
   border-radius: 8px; /* rounded.sm */
   font-size: 1rem;
   color: var(--ink-strong);
@@ -281,12 +283,12 @@ main {
   resize: vertical;
 }
 
-/* Soft Focus: Rausch color border, no harsh black */
+/* Soft Warm Focus: Rausch color border with beautiful ambient glow */
 .form-group input:focus, .form-group textarea:focus {
   outline: none;
   border: 2px solid var(--primary);
   padding: calc(1rem - 1px); /* Offset padding to prevent sizing jump */
-  box-shadow: rgba(255, 56, 92, 0.03) 0px 0px 0px 3px;
+  box-shadow: rgba(255, 56, 92, 0.04) 0px 0px 0px 3px;
 }
 
 /* Form Buttons */
@@ -322,7 +324,7 @@ main {
   margin-top: 1rem;
 }
 
-/* Airbnb button-secondary styling */
+/* Secondary Button - Beautifully matched with warm card */
 .detail-actions button {
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
@@ -347,14 +349,14 @@ main {
   transform: scale(0.96);
 }
 
-/* Color accents on secondary buttons - Softened */
+/* Cozy subtle color accents on secondary buttons */
 .detail-actions .btn-pin {
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #c27803; /* Soft amber */
+  border-color: rgba(217, 119, 6, 0.25);
+  color: #b45309; /* Deep warm amber */
 }
 .detail-actions .btn-pin:hover {
-  background: rgba(251, 191, 36, 0.03);
-  border-color: #c27803;
+  background: rgba(217, 119, 6, 0.02);
+  border-color: #b45309;
 }
 
 .detail-actions .btn-archive {
@@ -378,11 +380,11 @@ main {
 
 .detail-actions .btn-delete {
   border-color: rgba(239, 68, 68, 0.2);
-  color: #dc2626;
+  color: #b91c1c;
 }
 .detail-actions .btn-delete:hover {
   background: rgba(239, 68, 68, 0.03);
-  border-color: #dc2626;
+  border-color: #b91c1c;
 }
 
 /* Storage View */
@@ -423,7 +425,7 @@ main {
   word-break: break-all;
 }
 
-/* Floating Action Button (FAB) -> Airbnb search-orb layout */
+/* Floating Action Button (FAB) -> Warm Ambient Shadow */
 #fab-container {
   position: fixed;
   bottom: 2.25rem;
@@ -499,7 +501,7 @@ main {
   border: 1px solid var(--hairline);
   padding: 3rem 2rem;
   border-radius: 14px; /* rounded.md */
-  box-shadow: rgba(0, 0, 0, 0.03) 0px 10px 30px;
+  box-shadow: rgba(51, 47, 39, 0.02) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -569,7 +571,7 @@ main {
   border: 1px solid rgba(239, 68, 68, 0.2);
   padding: 2.5rem 2rem;
   border-radius: 14px;
-  box-shadow: rgba(0, 0, 0, 0.03) 0px 10px 30px;
+  box-shadow: rgba(51, 47, 39, 0.02) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -630,7 +632,7 @@ main {
   letter-spacing: 0.5px;
 }
 
-/* Markdown Custom Styling for Light Theme */
+/* Markdown Custom Styling for Cozy Theme */
 .section-content p {
   margin-bottom: 0.5rem;
 }
