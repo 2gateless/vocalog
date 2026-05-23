@@ -279,7 +279,7 @@ main {
   color: var(--text-main);
 }
 
-.etymology { font-style: italic; color: #000; }
+.etymology { font-style: normal; color: #000; }
 .example { font-weight: 500; border-left: 4px solid var(--primary-light); padding-left: 1rem; }
 .translation { font-size: 1.125rem; font-weight: 600; color: #0f172a; }
 
