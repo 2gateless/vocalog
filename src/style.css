@@ -56,9 +56,9 @@ body {
   
   /* Geometric Cross-Grid Pattern (글자 가독성을 해치지 않으면서 확실한 존재감을 드러내는 기하학적 격자 모눈종이 무늬) */
   background-image: 
-    linear-gradient(rgba(200, 185, 150, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200, 185, 150, 0.08) 1px, transparent 1px);
-  background-size: 6px 6px;
+    linear-gradient(rgba(200, 185, 150, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 185, 150, 0.15) 1px, transparent 1px);
+  background-size: 12px 12px;
   
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
