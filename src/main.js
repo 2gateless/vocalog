@@ -70,10 +70,10 @@ const fabContainer = document.getElementById('fab-container');
 const violetIconHTML = `
   <svg class="violet-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" fill="var(--primary)" fill-opacity="0.1"/>
-    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
-    <path d="M12 12C12 14.2091 10.2091 16 8 16C5.79086 16 4 14.2091 4 12C4 9.79086 5.79086 8 8 8C10.2091 8 12 9.79086 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
-    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
-    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(0, 217, 146, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="rgba(255, 56, 92, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 14.2091 10.2091 16 8 16C5.79086 16 4 14.2091 4 12C4 9.79086 5.79086 8 8 8C10.2091 8 12 9.79086 12 12Z" fill="rgba(255, 56, 92, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(255, 56, 92, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
+    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(255, 56, 92, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
     <circle cx="12" cy="12" r="2.5" fill="var(--primary)"/>
     <path d="M12 22V16" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
