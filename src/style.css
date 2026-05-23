@@ -54,9 +54,11 @@ body {
   flex-direction: column;
   background: var(--canvas); /* #f8f3e5 (Vintage Cozy Paper) */
   
-  /* Subtly ruled lined notebook pattern to give organic paper texture */
-  background-image: linear-gradient(rgba(223, 213, 190, 0.25) 1px, transparent 1px);
-  background-size: 100% 28px;
+  /* Geometric Cross-Grid Pattern (글자 가독성을 해치지 않으면서 확실한 존재감을 드러내는 기하학적 격자 모눈종이 무늬) */
+  background-image: 
+    linear-gradient(rgba(200, 185, 150, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 185, 150, 0.35) 1px, transparent 1px);
+  background-size: 24px 24px;
   
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
@@ -129,7 +131,7 @@ main {
   padding-bottom: 7rem; /* Space for FAB */
   display: flex;
   flex-direction: column;
-  background: transparent; /* Allows lined notebook pattern to flow seamlessly */
+  background: transparent; /* Allows cross-grid notebook pattern to flow seamlessly */
 }
 
 /* View Animations */
