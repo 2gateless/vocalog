@@ -1,26 +1,25 @@
 :root {
-  /* Airbnb Design Tokens (design.md) */
+  /* Airbnb Design Tokens - Brightened & Smoothened */
   --primary: #ff385c;            /* Airbnb Rausch */
   --primary-soft: #ff5a79;       /* Hover state */
   --primary-deep: #e00b41;       /* Active / Pressed state */
   --primary-disabled: #ffd1da;   /* Disabled state */
   --on-primary: #ffffff;
   
-  --ink: #222222;                /* Title, bold, near-black */
+  --ink: #222222;                /* Near-black text */
   --ink-strong: #222222;
-  --body: #3f3f3f;               /* Default running text */
-  --mute: #6a6a6a;               /* Muted, secondary labels */
-  --mute-soft: #929292;
+  --body: #484848;               /* Smoothened dark gray for body text */
+  --mute: #717171;               /* Muted, secondary labels */
+  --mute-soft: #b0b0b0;
   
-  --hairline: #dddddd;           /* Thin border */
-  --hairline-soft: #ebebeb;
+  --hairline: #ebebeb;           /* Ultra-soft light gray border */
+  --hairline-soft: #f7f7f7;
   
   --canvas: #ffffff;             /* Pure white canvas */
-  --canvas-soft: #f7f7f7;        /* Soft gray background fill */
-  --canvas-strong: #f2f2f2;      /* Slightly darker gray fill */
-  --canvas-text-soft: #4a4a4a;
+  --canvas-soft: #fafafa;        /* Very bright off-white for soft surface */
+  --canvas-strong: #f7f7f7;      /* Subtle gray fill */
+  --canvas-text-soft: #555555;
   
-  /* Modern Open Source Stack (Inter is closest substitute for Cereal) */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
@@ -34,7 +33,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #f7f7f7; /* Outer page floor */
+  background-color: #fafafa; /* Bright, clean milk-white page floor */
   color: var(--ink);
   line-height: 1.5;
   overflow-x: hidden;
@@ -51,25 +50,25 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas);
+  background: var(--canvas); /* #ffffff */
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
-  /* Airbnb Rest elevation shadow */
-  box-shadow: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, 
-              rgba(0, 0, 0, 0.04) 0px 4px 12px;
+  /* Airbnb Rest elevation shadow - Extremely soft & clean */
+  box-shadow: rgba(0, 0, 0, 0.01) 0px 0px 0px 1px, 
+              rgba(0, 0, 0, 0.03) 0px 4px 16px;
   position: relative;
 }
 
 /* Header */
 .app-header {
   padding: 1.25rem 1.5rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid var(--hairline-soft);
+  border-bottom: 1px solid var(--hairline);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -102,7 +101,7 @@ body {
 
 .header-sync-btn:hover, .header-home-btn:hover, .header-storage-btn:hover, .header-logout-btn:hover {
   color: var(--ink);
-  background: var(--canvas-soft);
+  background: var(--canvas-soft); /* Extremely bright hover bg */
 }
 
 .header-sync-btn:active, .header-home-btn:active, .header-storage-btn:active, .header-logout-btn:active {
@@ -120,9 +119,10 @@ body {
 main {
   flex: 1;
   padding: 1.5rem;
-  padding-bottom: 7rem; /* Generous space for FAB */
+  padding-bottom: 7rem; /* Space for FAB */
   display: flex;
   flex-direction: column;
+  background: var(--canvas); /* Seamless with app canvas */
 }
 
 /* View Animations */
@@ -152,20 +152,20 @@ main {
 }
 
 .voca-item {
-  background: var(--canvas);
+  background: var(--canvas); /* Seamless white */
   padding: 1.25rem 1.5rem;
   border-radius: 14px; /* rounded.md */
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline); /* Ultra soft border */
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 
 .voca-item:hover {
   border-color: var(--primary-soft);
-  /* Airbnb Hover float shadow */
-  box-shadow: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, 
-              rgba(0, 0, 0, 0.04) 0px 4px 10px, 
-              rgba(0, 0, 0, 0.08) 0px 8px 16px;
+  /* Light Rausch-tinted floating shadow */
+  box-shadow: rgba(255, 56, 92, 0.03) 0px 0px 0px 1px, 
+              rgba(0, 0, 0, 0.02) 0px 4px 8px, 
+              rgba(0, 0, 0, 0.05) 0px 8px 20px;
   transform: translateY(-2px);
 }
 
@@ -180,20 +180,20 @@ main {
   letter-spacing: -0.3px;
 }
 
-/* Detail & Form Views (Airbnb Cards) */
+/* Detail & Form Views (Seamless with background) */
 .detail-view, .form-view {
-  background: var(--canvas);
+  background: var(--canvas); /* Seamless pure white */
   padding: 1.75rem;
   border-radius: 14px; /* rounded.md */
   border: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: rgba(0, 0, 0, 0.03) 0px 4px 16px;
+  box-shadow: rgba(0, 0, 0, 0.01) 0px 4px 16px; /* Ultra subtle shadow */
 }
 
 .detail-header {
-  border-bottom: 1px solid var(--hairline-soft);
+  border-bottom: 1px solid var(--hairline);
   padding-bottom: 0.85rem;
   margin-bottom: 0.25rem;
 }
@@ -219,11 +219,12 @@ main {
   letter-spacing: 1px;
 }
 
+/* Bright & Soft section-content to reduce contrast difference */
 .section-content {
   font-size: 1rem;
   color: var(--body);
-  background: var(--canvas-soft);
-  border: 1px solid var(--hairline-soft);
+  background: var(--canvas-soft); /* Extremely soft off-white #fafafa */
+  border: 1px solid var(--hairline); /* Soft border instead of strong contrast */
   padding: 1rem;
   border-radius: 8px; /* rounded.sm */
   line-height: 1.6;
@@ -237,15 +238,15 @@ main {
 
 .example {
   border-left: 3px solid var(--primary);
-  background: rgba(255, 56, 92, 0.02); /* Rausch 2% tint */
+  background: rgba(255, 56, 92, 0.01); /* Rausch 1% tint (nearly invisible but warm) */
 }
 
 .translation {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--primary);
-  background: rgba(255, 56, 92, 0.04); /* Rausch 4% tint */
-  border-color: rgba(255, 56, 92, 0.15);
+  background: rgba(255, 56, 92, 0.02); /* Rausch 2% tint */
+  border-color: rgba(255, 56, 92, 0.1);
 }
 
 /* Form View */
@@ -262,17 +263,17 @@ main {
   letter-spacing: 0.5px;
 }
 
-/* Airbnb text-input style */
+/* Airbnb text-input style - Brightened & Smoothened */
 .form-group input, .form-group textarea {
   width: 100%;
   padding: 1rem;
-  background: var(--canvas);
-  border: 1px solid var(--hairline);
+  background: var(--canvas); /* Seamless white #ffffff */
+  border: 1px solid var(--hairline); /* Gentle gray border */
   border-radius: 8px; /* rounded.sm */
   font-size: 1rem;
   color: var(--ink-strong);
   font-family: inherit;
-  transition: border-width 0.1s, border-color 0.15s;
+  transition: border-width 0.1s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .form-group textarea {
@@ -280,11 +281,12 @@ main {
   resize: vertical;
 }
 
-/* Focus: Thick ink border, no glowing ring */
+/* Soft Focus: Rausch color border, no harsh black */
 .form-group input:focus, .form-group textarea:focus {
   outline: none;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--primary);
   padding: calc(1rem - 1px); /* Offset padding to prevent sizing jump */
+  box-shadow: rgba(255, 56, 92, 0.03) 0px 0px 0px 3px;
 }
 
 /* Form Buttons */
@@ -304,7 +306,7 @@ main {
 
 .btn-save:hover {
   background: var(--primary-soft);
-  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  box-shadow: rgba(255, 56, 92, 0.15) 0px 4px 12px;
 }
 
 .btn-save:active {
@@ -338,21 +340,21 @@ main {
 
 .detail-actions button:hover {
   background: var(--canvas-soft);
-  border-color: var(--ink);
+  border-color: var(--mute);
 }
 
 .detail-actions button:active {
   transform: scale(0.96);
 }
 
-/* Color accents on secondary buttons */
+/* Color accents on secondary buttons - Softened */
 .detail-actions .btn-pin {
-  border-color: rgba(251, 191, 36, 0.4);
-  color: #d97706; /* Solid dark yellow/amber */
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #c27803; /* Soft amber */
 }
 .detail-actions .btn-pin:hover {
-  background: rgba(251, 191, 36, 0.05);
-  border-color: #d97706;
+  background: rgba(251, 191, 36, 0.03);
+  border-color: #c27803;
 }
 
 .detail-actions .btn-archive {
@@ -362,25 +364,25 @@ main {
 .detail-actions .btn-archive:hover {
   background: var(--canvas-soft);
   color: var(--ink);
-  border-color: var(--ink);
+  border-color: var(--mute);
 }
 
 .detail-actions .btn-edit {
-  border-color: rgba(255, 56, 92, 0.2);
+  border-color: rgba(255, 56, 92, 0.15);
   color: var(--primary);
 }
 .detail-actions .btn-edit:hover {
-  background: rgba(255, 56, 92, 0.03);
+  background: rgba(255, 56, 92, 0.02);
   border-color: var(--primary);
 }
 
 .detail-actions .btn-delete {
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #e53e3e;
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #dc2626;
 }
 .detail-actions .btn-delete:hover {
-  background: rgba(239, 68, 68, 0.05);
-  border-color: #e53e3e;
+  background: rgba(239, 68, 68, 0.03);
+  border-color: #dc2626;
 }
 
 /* Storage View */
@@ -406,7 +408,7 @@ main {
 
 .storage-item:hover {
   border-color: var(--primary-soft);
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 4px 10px;
+  box-shadow: rgba(255, 56, 92, 0.03) 0px 4px 10px;
   transform: translateY(-2px);
 }
 
@@ -425,7 +427,7 @@ main {
 #fab-container {
   position: fixed;
   bottom: 2.25rem;
-  right: calc(50% - 220px); /* Anchor inside app container */
+  right: calc(50% - 220px);
   z-index: 200;
 }
 
@@ -446,7 +448,7 @@ main {
   justify-content: center;
   font-size: 1.75rem;
   font-weight: 500;
-  box-shadow: rgba(255, 56, 92, 0.35) 0px 8px 24px;
+  box-shadow: rgba(255, 56, 92, 0.3) 0px 8px 24px;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
@@ -454,7 +456,7 @@ main {
 .fab:hover {
   background: var(--primary-soft);
   transform: translateY(-3px) scale(1.05);
-  box-shadow: rgba(255, 56, 92, 0.45) 0px 10px 28px;
+  box-shadow: rgba(255, 56, 92, 0.4) 0px 10px 28px;
 }
 
 .fab:active {
@@ -497,7 +499,7 @@ main {
   border: 1px solid var(--hairline);
   padding: 3rem 2rem;
   border-radius: 14px; /* rounded.md */
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 10px 30px;
+  box-shadow: rgba(0, 0, 0, 0.03) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -508,7 +510,7 @@ main {
 }
 
 .auth-logo {
-  filter: drop-shadow(0 4px 8px rgba(255, 56, 92, 0.2));
+  filter: drop-shadow(0 4px 8px rgba(255, 56, 92, 0.15));
   margin-bottom: 0.5rem;
   animation: simpleSway 4s ease-in-out infinite;
 }
@@ -554,7 +556,7 @@ main {
   background: var(--canvas-soft);
   border-color: var(--primary);
   color: var(--ink-strong);
-  box-shadow: rgba(255, 56, 92, 0.1) 0px 4px 12px;
+  box-shadow: rgba(255, 56, 92, 0.08) 0px 4px 12px;
 }
 
 .btn-google:active {
@@ -564,10 +566,10 @@ main {
 /* Unauthorized Page */
 .unauthorized-card {
   background: var(--canvas);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   padding: 2.5rem 2rem;
   border-radius: 14px;
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 10px 30px;
+  box-shadow: rgba(0, 0, 0, 0.03) 0px 10px 30px;
   width: 100%;
   max-width: 380px;
   text-align: center;
@@ -586,8 +588,8 @@ main {
 .unauthorized-text {
   font-size: 0.9rem;
   color: var(--body);
-  background: rgba(239, 68, 68, 0.03);
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.02);
+  border: 1px solid rgba(239, 68, 68, 0.1);
   padding: 1rem;
   border-radius: 8px;
   line-height: 1.6;
@@ -618,7 +620,7 @@ main {
   text-align: center;
   padding: 2.5rem 1rem;
   margin-top: auto;
-  border-top: 1px solid var(--hairline-soft);
+  border-top: 1px solid var(--hairline);
   background: var(--canvas-soft);
 }
 
@@ -656,7 +658,7 @@ main {
 }
 
 .section-content code {
-  background: rgba(255, 56, 92, 0.06);
+  background: rgba(255, 56, 92, 0.05);
   color: var(--primary);
   padding: 0.15rem 0.35rem;
   border-radius: 4px;
@@ -666,7 +668,7 @@ main {
 
 .section-content pre {
   background: var(--canvas-soft);
-  border: 1px solid var(--hairline-soft);
+  border: 1px solid var(--hairline);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -682,7 +684,7 @@ main {
 
 .section-content blockquote {
   border-left: 3px solid var(--primary);
-  background: rgba(255, 56, 92, 0.02);
+  background: rgba(255, 56, 92, 0.015);
   padding: 0.5rem 0.75rem;
   margin: 0.75rem 0;
   border-radius: 0 8px 8px 0;
