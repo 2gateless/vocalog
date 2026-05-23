@@ -10,6 +10,50 @@ import './style.css'
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set } from "firebase/database";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
+import { marked } from "marked";
+
+// --- Markdown & Content Helpers ---
+const isMarkdown = (text) => {
+  if (!text) return false;
+  const mdPatterns = [
+    /^#+\s/m,                  // headers
+    /(\*\*|__)(.*?)\1/,        // bold
+    /(\*|_)(.*?)\1/,           // italic
+    /^\s*[-*+]\s/m,            // unordered lists
+    /^\s*\d+\.\s/m,            // ordered lists
+    /`[^`\n]+`/,               // inline code
+    /```[^`]+```/,             // code blocks
+    /\[([^\]]+)\]\(([^)]+)\)/,  // links
+    /^\s*>\s/m                 // blockquotes
+  ];
+  return mdPatterns.some(pattern => pattern.test(text));
+};
+
+const escapeHtml = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+const renderContent = (text) => {
+  if (!text) return '-';
+  if (isMarkdown(text)) {
+    try {
+      marked.setOptions({
+        gfm: true,
+        breaks: true
+      });
+      return marked.parse(text);
+    } catch (err) {
+      console.error('Failed to parse markdown:', err);
+    }
+  }
+  return escapeHtml(text).replace(/\n/g, '<br>');
+};
 
 // --- State Management ---
 let words = JSON.parse(localStorage.getItem('voca_logs')) || [];
@@ -368,9 +412,9 @@ const renderDetailView = (index) => {
       <div class="detail-header">
         <h2>${w.word}</h2>
       </div>
-      <div class="section"><div class="section-label">어원</div><div class="section-content etymology">${w.etymology || '-'}</div></div>
-      <div class="section"><div class="section-label">예문</div><div class="section-content example">${w.example || '-'}</div></div>
-      <div class="section"><div class="section-label">번역</div><div class="section-content translation">${w.translation || '-'}</div></div>
+      <div class="section"><div class="section-label">어원</div><div class="section-content etymology">${renderContent(w.etymology)}</div></div>
+      <div class="section"><div class="section-label">예문</div><div class="section-content example">${renderContent(w.example)}</div></div>
+      <div class="section"><div class="section-label">번역</div><div class="section-content translation">${renderContent(w.translation)}</div></div>
       <div class="detail-actions">
         <button class="btn-archive" onclick="window.toggleArchive(${index})">${w.archived ? '단어장 복귀' : '창고로 이동'}</button>
         <button class="btn-pin" onclick="window.togglePin(${index})">${w.pinned ? '핀 해제' : '핀 고정'}</button>
