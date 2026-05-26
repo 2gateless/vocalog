@@ -1,26 +1,26 @@
 :root {
-  /* Airbnb Design Tokens - Vintage Ruled Paper Theme with Cozy Sage Olive (눈이 편안한 연두색 공책 테마) */
-  --primary: #4f9d69;            /* 싱그러운 잎새 연두색 (Cozy Sage Green) */
-  --primary-soft: #6dbf87;       /* Hover state (부드러운 밝은 연두) */
-  --primary-deep: #3b7a50;       /* Active / Pressed state (짙은 풀빛 연두) */
-  --primary-disabled: #c3e6cf;   /* Disabled state */
+  /* Airbnb Design Tokens - Vintage Sage Garden Theme (눈이 편안한 연두색 정원 테마) */
+  --primary: #2e7d32;            /* 짙고 정갈한 포레스트 그린 (영어단어, 뜻 강조용) */
+  --primary-soft: #4caf50;       /* Hover state (밝은 연두) */
+  --primary-deep: #1b5e20;       /* Active / Pressed state (깊은 상록수 그린) */
+  --primary-disabled: #a5d6a7;   /* Disabled state */
   --on-primary: #ffffff;
   
-  /* Espresso Brown & Charcoal instead of harsh black for absolute eye comfort */
-  --ink: #3b3224;                /* 깊은 빈티지 잉크 브라운 */
-  --ink-strong: #2a2216;
-  --body: #594f3f;               /* 연필 글씨 느낌의 웜 브라운 그레이 */
-  --mute: #877b69;               /* 빛바랜 브라운 그레이 */
-  --mute-soft: #b2a795;
+  /* Espresso Dark Olive instead of harsh black for absolute eye comfort */
+  --ink: #1f3322;                /* 깊은 빈티지 그린블랙 잉크 */
+  --ink-strong: #0f2011;
+  --body: #3b523e;               /* 웜 그린 그레이 (본문 텍스트) */
+  --mute: #627b65;               /* 빛바랜 올리브 */
+  --mute-soft: #8da490;
   
-  --hairline: #dfd5be;           /* 아날로그 노트 가장자리 느낌의 우드 베이지 테두리 */
-  --hairline-soft: #f0ebd9;
+  --hairline: #b9cfbd;           /* 은은한 잎새 빛깔 테두리 */
+  --hairline-soft: #d8e5db;
   
-  /* Cozy Paper Canvases - Strictly Non-White */
-  --canvas: #f8f3e5;             /* 흰색을 완전히 배제한 아늑하고 정갈한 미색 갱지/한지 캔버스 */
-  --canvas-soft: #eedfb8;        /* 조금 더 깊은 크라프트/재생 황색지 톤 */
-  --canvas-strong: #e2d1a3;      /* 음영을 강조하는 따뜻한 샌드 톤 */
-  --canvas-text-soft: #6e614d;
+  /* Cozy Sage Paper Canvases - Strictly Non-White & Pastel Green */
+  --canvas: #f0f7f3;             /* 눈이 정말 편안한 아늑한 파스텔 밀크 연두색 캔버스 */
+  --canvas-soft: #dbeae0;        /* Deeper sage green shade */
+  --canvas-strong: #c8ded0;      /* Shadow shade */
+  --canvas-text-soft: #435e46;
   
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, Courier, monospace;
@@ -35,7 +35,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #ebdcb9; /* 낡은 목재 도서관 책상이나 두꺼운 가죽 매트 감성의 짙은 웜 샌드 배경 */
+  background-color: #d1dfd5; /* 차분한 딥 세이지 데스크 매트 감성의 연두빛 배경 */
   color: var(--ink);
   line-height: 1.5;
   overflow-x: hidden;
@@ -52,19 +52,19 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--canvas); /* #f8f3e5 (Vintage Cozy Paper) */
+  background: var(--canvas); /* #f0f7f3 (Vintage Cozy Sage Paper) */
   
-  /* Geometric Cross-Grid Pattern (글자 가독성을 해치지 않으면서 확실한 존재감을 드러내는 기하학적 격자 모눈종이 무늬) */
+  /* Geometric Cross-Grid Pattern with cozy green tint */
   background-image: 
-    linear-gradient(rgba(200, 185, 150, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200, 185, 150, 0.15) 1px, transparent 1px);
+    linear-gradient(rgba(130, 180, 140, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(130, 180, 140, 0.15) 1px, transparent 1px);
   background-size: 12px 12px;
   
   border-left: 1px solid var(--hairline);
   border-right: 1px solid var(--hairline);
-  /* Airbnb Rest elevation shadow - Matched with vintage shades */
-  box-shadow: rgba(59, 50, 36, 0.05) 0px 0px 0px 1px, 
-              rgba(59, 50, 36, 0.08) 0px 8px 30px;
+  /* Airbnb Rest elevation shadow - Matched with vintage green shades */
+  box-shadow: rgba(31, 51, 34, 0.04) 0px 0px 0px 1px, 
+              rgba(31, 51, 34, 0.06) 0px 8px 30px;
   position: relative;
 }
 
@@ -187,7 +187,7 @@ main {
 .voca-item-title {
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--ink-strong);
+  color: var(--primary);
   letter-spacing: -0.3px;
 }
 
@@ -256,8 +256,8 @@ main {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--primary);
-  background: rgba(79, 157, 105, 0.04); /* Sage Green 4% warm tint */
-  border-color: rgba(79, 157, 105, 0.15);
+  background: rgba(46, 125, 50, 0.04); /* Sage Green 4% warm tint */
+  border-color: rgba(46, 125, 50, 0.15);
 }
 
 /* Form View */
@@ -431,7 +431,7 @@ main {
 .storage-item-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--ink-strong);
+  color: var(--primary);
   word-break: break-all;
 }
 
