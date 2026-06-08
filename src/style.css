@@ -216,6 +216,29 @@ main {
   letter-spacing: -0.5px;
 }
 
+.btn-speak {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary);
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-speak:hover {
+  background: var(--canvas-soft);
+  color: var(--primary-soft);
+  transform: scale(1.1);
+}
+
+.btn-speak:active {
+  transform: scale(0.95);
+}
+
 .section {
   display: flex;
   flex-direction: column;

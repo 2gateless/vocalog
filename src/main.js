@@ -212,7 +212,23 @@ const handleSyncClick = () => {
 };
 
 // --- Helper: Pronunciation ---
-// Removed
+window.speakWord = (word) => {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    
+    // 미국식 영어 보이스 필터링 시도
+    const voices = window.speechSynthesis.getVoices();
+    const usVoice = voices.find(v => v.lang === 'en-US' || v.lang.startsWith('en-'));
+    if (usVoice) {
+      utterance.voice = usVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+  } else {
+    alert('이 브라우저는 음성 재생(SpeechSynthesis)을 지원하지 않습니다.');
+  }
+};
 
 // --- Auth UI Icons & Views ---
 const googleIconHTML = `
@@ -412,8 +428,14 @@ const renderDetailView = (index) => {
   document.getElementById('btn-logout').onclick = () => signOut(auth);
   appMain.innerHTML = `
     <div class="view detail-view">
-      <div class="detail-header">
+      <div class="detail-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h2>${w.word}</h2>
+        <button class="btn-speak" onclick="window.speakWord('${w.word.replace(/'/g, "\\'")}')" title="미국식 발음 듣기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
       </div>
       <div class="section"><div class="section-label">어원</div><div class="section-content etymology">${renderContent(w.etymology)}</div></div>
       <div class="section"><div class="section-label">예문</div><div class="section-content example">${renderContent(w.example)}</div></div>
