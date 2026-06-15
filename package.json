@@ -12,6 +12,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "dompurify": "^3.4.10",
     "firebase": "^12.12.1",
     "marked": "^18.0.4"
   }
