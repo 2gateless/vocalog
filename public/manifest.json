@@ -5,7 +5,7 @@
   "start_url": "/vocalog/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "theme_color": "#2e7d32",
   "icons": [
     {
       "src": "icon-192.png",

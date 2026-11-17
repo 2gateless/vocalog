@@ -7,16 +7,16 @@ window.addEventListener('error', (e) => {
 }, true);
 
 import './style.css';
-import { setAuthState, getCurrentView } from "./store.js";
+import { setAuthState, getCurrentView, getCurrentData } from "./store.js";
 import { onAuthChanged, syncWithFirebase } from "./firebase.js";
-import { renderUnauthorizedView, renderLoginView } from "./ui.js";
+import { navigateTo, renderUnauthorizedView, renderLoginView } from "./ui.js";
 
 // 브라우저 뒤로가기 버튼 처리
 window.onpopstate = (event) => {
   if (event.state && event.state.view) {
-    window.navigateTo(event.state.view, event.state.data, true);
+    navigateTo(event.state.view, event.state.data, true);
   } else {
-    window.navigateTo('list', null, true);
+    navigateTo('list', null, true);
   }
 };
 
@@ -26,9 +26,9 @@ onAuthChanged((user) => {
     if (user.email === '2gateless@gmail.com') {
       setAuthState(true, user);
       syncWithFirebase(() => {
-        window.navigateTo(getCurrentView());
+        navigateTo(getCurrentView(), getCurrentData(), true);
       });
-      window.navigateTo(getCurrentView());
+      navigateTo(getCurrentView(), getCurrentData(), true);
     } else {
       setAuthState(false, user);
       renderUnauthorizedView(user.email);

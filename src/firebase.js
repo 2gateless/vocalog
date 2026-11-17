@@ -3,7 +3,15 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set } from "firebase/database";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
-import { getWords, setWords, getDeletedWords, sortWords, saveToLocal, getAuthState } from "./store.js";
+import {
+  getWords,
+  setWords,
+  getDeletedWords,
+  normalizeWord,
+  sortWords,
+  saveToLocal,
+  getAuthState
+} from "./store.js";
 import { showToast } from "./toast.js";
 
 const firebaseConfig = {
@@ -42,14 +50,21 @@ export const uploadToFirebase = async () => {
   const { isAuthorized } = getAuthState();
   if (!isAuthorized) {
     console.warn('Upload blocked: User not authorized.');
-    return;
+    return false;
   }
   try {
     const dbRef = ref(db, 'vocaLog');
     await set(dbRef, getWords());
+    return true;
   } catch (err) {
     console.error('Failed to upload to Firebase', err);
+    showToast('클라우드 저장 실패', 'error');
+    return false;
   }
+};
+
+const isItemDeleted = (item, deletedWords) => {
+  return deletedWords.has(item.id) || deletedWords.has(item.word);
 };
 
 // Firebase와 양방향 동기화
@@ -60,48 +75,44 @@ export const syncWithFirebase = async (onSyncSuccess) => {
     return;
   }
   showToast('동기화 중...', 'info');
-  
+
   try {
     const dbRef = ref(db, 'vocaLog');
     const snapshot = await get(dbRef);
     const remoteData = snapshot.val();
     const deletedWords = getDeletedWords();
-    let words = getWords();
-    
+    const localWords = getWords();
+
     if (remoteData) {
-      const remoteWordsMap = new Map();
-      Object.keys(remoteData).forEach(key => {
-        const item = remoteData[key];
-        if (item && item.word) {
-          remoteWordsMap.set(item.word, item);
-        }
-      });
-      
-      // 병합: 로컬 삭제 목록에 없는 것들만 병합 진행
       const mergedMap = new Map();
-      words.forEach(w => {
-        if (w && w.word && !deletedWords.has(w.word)) {
-           mergedMap.set(w.word, w);
+
+      localWords.forEach((raw) => {
+        const item = normalizeWord(raw);
+        if (item && !isItemDeleted(item, deletedWords)) {
+          mergedMap.set(item.id, item);
         }
       });
-      remoteWordsMap.forEach((w, key) => {
-        if (w && w.word && !deletedWords.has(key)) {
-           mergedMap.set(key, w);
+
+      Object.keys(remoteData).forEach((key) => {
+        const item = normalizeWord(remoteData[key]);
+        if (!item || isItemDeleted(item, deletedWords)) return;
+
+        const existing = mergedMap.get(item.id);
+        if (!existing || item.updatedAt >= existing.updatedAt) {
+          mergedMap.set(item.id, item);
         }
       });
-      
+
       const mergedWords = Array.from(mergedMap.values());
       setWords(mergedWords);
       sortWords();
       saveToLocal();
-      
-      await uploadToFirebase();
-      
+    }
+
+    const uploaded = await uploadToFirebase();
+    if (uploaded) {
       showToast('동기화 완료', 'success');
       if (onSyncSuccess) onSyncSuccess();
-    } else {
-      await uploadToFirebase();
-      showToast('동기화 완료', 'success');
     }
   } catch (err) {
     showToast('동기화 실패', 'error');

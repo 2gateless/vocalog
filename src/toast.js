@@ -20,7 +20,10 @@ export const showToast = (message, type = 'info') => {
     icon = `<svg class="sync-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`;
   }
 
-  toast.innerHTML = `${icon}<span>${message}</span>`;
+  toast.innerHTML = icon;
+  const textEl = document.createElement('span');
+  textEl.textContent = message;
+  toast.appendChild(textEl);
   container.appendChild(toast);
   
   setTimeout(() => {

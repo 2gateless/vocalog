@@ -2,22 +2,33 @@
 
 import DOMPurify from "dompurify";
 import { marked } from "marked";
-import { 
-  getWords, 
-  getAuthState, 
-  getCurrentView, 
+import {
+  getWords,
+  getWordById,
+  getAuthState,
+  getCurrentView,
   setCurrentView,
+  getCurrentData,
+  setCurrentData,
+  generateId,
   sortWords,
   saveToLocal,
-  addDeletedWord
+  addDeletedWord,
+  removeDeletedWord
 } from "./store.js";
-import { 
-  signInWithGoogle, 
-  signOutUser, 
-  syncWithFirebase, 
-  uploadToFirebase 
+import {
+  signInWithGoogle,
+  signOutUser,
+  syncWithFirebase,
+  uploadToFirebase
 } from "./firebase.js";
 import { showToast } from "./toast.js";
+
+// Markdown 옵션 1회 설정
+marked.setOptions({
+  gfm: true,
+  breaks: true
+});
 
 // --- DOM Elements ---
 const appMain = document.getElementById('main-content');
@@ -35,7 +46,7 @@ const isMarkdown = (text) => {
     /^\s*\d+\.\s/m,            // ordered lists
     /`[^`\n]+`/,               // inline code
     /```[^`]+```/,             // code blocks
-    /\[([^\]]+)\]\(([^)]+)\)/,  // links
+    /\[([^\]]+)\]\(([^)]+)\)/, // links
     /^\s*>\s/m                 // blockquotes
   ];
   return mdPatterns.some(pattern => pattern.test(text));
@@ -43,7 +54,7 @@ const isMarkdown = (text) => {
 
 const escapeHtml = (text) => {
   if (!text) return '';
-  return text
+  return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -55,10 +66,6 @@ const renderContent = (text) => {
   if (!text) return '-';
   if (isMarkdown(text)) {
     try {
-      marked.setOptions({
-        gfm: true,
-        breaks: true
-      });
       return DOMPurify.sanitize(marked.parse(text));
     } catch (err) {
       console.error('Failed to parse markdown:', err);
@@ -73,7 +80,6 @@ const violetIconHTML = `
     <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" fill="var(--primary)" fill-opacity="0.1"/>
     <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="rgba(79, 157, 105, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
     <path d="M12 12C12 14.2091 10.2091 16 8 16C5.79086 16 4 14.2091 4 12C4 9.79086 5.79086 8 8 8C10.2091 8 12 9.79086 12 12Z" fill="rgba(79, 157, 105, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
-    <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(79, 157, 105, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
     <path d="M12 12C12 9.79086 13.7909 8 16 8C18.2091 8 20 9.79086 20 12C20 14.2091 18.2091 16 16 16C13.7909 16 12 14.2091 12 12Z" fill="rgba(79, 157, 105, 0.15)" stroke="var(--primary)" stroke-width="1.5"/>
     <circle cx="12" cy="12" r="2.5" fill="var(--primary)"/>
     <path d="M12 22V16" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round"/>
@@ -122,7 +128,7 @@ const logoutIconHTML = `
 `;
 
 // --- Pronunciation Helper ---
-window.speakWord = (word) => {
+const speakWord = (word) => {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(word);
@@ -134,35 +140,68 @@ window.speakWord = (word) => {
     }
     window.speechSynthesis.speak(utterance);
   } else {
-    alert('이 브라우저는 음성 재생(SpeechSynthesis)을 지원하지 않습니다.');
+    showToast('이 브라우저는 음성 재생을 지원하지 않습니다.', 'error');
   }
 };
 
-// --- View Renderers ---
+// --- Shared Header Renderer ---
 const handleSyncClick = () => {
   syncWithFirebase(() => {
-    // 동기화 완료 후 리스트 뷰를 다시 렌더링
-    if (getCurrentView() === 'list') {
-      renderListView();
-    } else if (getCurrentView() === 'storage') {
-      renderStorageView();
-    }
+    navigateTo(getCurrentView(), getCurrentData(), true);
   });
 };
 
-const handleLogoutClick = () => {
-  signOutUser();
+const renderHeader = ({ title, showHome = false, showStorage = false, homeTitle = 'Home' }) => {
+  const leftHTML = showHome
+    ? `
+      <button class="header-home-btn" data-action="home" title="${escapeHtml(homeTitle)}" style="padding:0; margin:0;">
+        ${homeIconHTML}
+      </button>
+      <span style="font-weight:700;">${escapeHtml(title)}</span>
+    `
+    : `
+      ${violetIconHTML}
+      <span style="font-weight:700;">${escapeHtml(title)}</span>
+    `;
+
+  const storageBtnHTML = showStorage
+    ? `
+      <button class="header-storage-btn" data-action="storage" title="단어창고">
+        ${archiveIconHTML}
+      </button>
+    `
+    : '';
+
+  viewTitle.innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+      ${leftHTML}
+    </div>
+    <div style="display:flex; align-items:center; gap:4px;">
+      ${storageBtnHTML}
+      <button class="header-sync-btn" data-action="sync" title="Firebase Sync">
+        ${driveIconHTML}
+      </button>
+      <button class="header-logout-btn" data-action="logout" title="로그아웃">
+        ${logoutIconHTML}
+      </button>
+    </div>
+  `;
 };
 
-export const renderLoginView = () => {
+const renderCenteredHeader = () => {
   viewTitle.innerHTML = `
     <div style="display:flex; align-items:center; justify-content:center; flex:1; gap:8px;">
       ${violetIconHTML}
       <span>VocaLog</span>
     </div>
   `;
+};
+
+// --- View Renderers ---
+export const renderLoginView = () => {
+  renderCenteredHeader();
   fabContainer.innerHTML = '';
-  
+
   appMain.innerHTML = `
     <div class="auth-view">
       <div class="auth-card">
@@ -178,26 +217,21 @@ export const renderLoginView = () => {
       </div>
     </div>
   `;
-  
-  document.getElementById('btn-login-google').onclick = async () => {
+
+  document.getElementById('btn-login-google').addEventListener('click', async () => {
     try {
       await signInWithGoogle();
     } catch (err) {
       console.error('Google Sign-in failed', err);
       alert('로그인 실패 상세 정보:\n\n에러 코드: ' + err.code + '\n에러 메시지: ' + err.message);
     }
-  };
+  });
 };
 
 export const renderUnauthorizedView = (email) => {
-  viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; justify-content:center; flex:1; gap:8px;">
-      ${violetIconHTML}
-      <span>VocaLog</span>
-    </div>
-  `;
+  renderCenteredHeader();
   fabContainer.innerHTML = '';
-  
+
   appMain.innerHTML = `
     <div class="auth-view">
       <div class="unauthorized-card">
@@ -210,55 +244,38 @@ export const renderUnauthorizedView = (email) => {
         <div class="unauthorized-text">
           <strong>2gateless@gmail.com</strong> 계정으로 로그인한 사용자만 이 단어장을 읽고 쓸 수 있습니다.<br><br>
           현재 로그인 계정:<br>
-          <span style="word-break: break-all; color: #ef4444; font-weight: 600;">${email}</span>
+          <span style="word-break: break-all; color: #ef4444; font-weight: 600;">${escapeHtml(email)}</span>
         </div>
         <button class="btn-auth-secondary" id="btn-switch-account">다른 계정으로 로그인</button>
       </div>
     </div>
   `;
-  
-  document.getElementById('btn-switch-account').onclick = async () => {
+
+  document.getElementById('btn-switch-account').addEventListener('click', async () => {
     try {
       await signOutUser();
     } catch (err) {
       console.error('Sign out failed', err);
     }
-  };
+  });
 };
 
 export const renderListView = () => {
   const words = getWords();
-  viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px; flex:1;">
-      ${violetIconHTML}
-      <span style="font-weight:700;">VocaLog</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:4px;">
-      <button class="header-storage-btn" onclick="window.navigateTo('storage')" title="단어창고">
-        ${archiveIconHTML}
-      </button>
-      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-        ${driveIconHTML}
-      </button>
-      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
-        ${logoutIconHTML}
-      </button>
-    </div>
-  `;
-  document.getElementById('btn-sync').onclick = handleSyncClick;
-  document.getElementById('btn-logout').onclick = handleLogoutClick;
-  
+  renderHeader({ title: 'VocaLog', showStorage: true });
+
+  const activeWords = words.filter(w => w && w.word && !w.archived);
   let html = '<div class="view voca-list">';
-  if (words.length === 0 || !words.some(w => w && w.word && !w.archived)) {
+
+  if (activeWords.length === 0) {
     html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
   } else {
-    words.forEach((w, index) => {
-      if (!w || !w.word || w.archived) return;
+    activeWords.forEach((w) => {
       html += `
-        <div class="voca-item" onclick="window.navigateTo('detail', ${index})">
+        <div class="voca-item" data-action="detail" data-id="${escapeHtml(w.id)}">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-              <div class="voca-item-title">${w.word}</div>
+              <div class="voca-item-title">${escapeHtml(w.word)}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               ${w.pinned ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>' : ''}
@@ -275,71 +292,37 @@ export const renderListView = () => {
 
 export const renderStorageView = () => {
   const words = getWords();
-  viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px; flex:1;">
-      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home" style="padding:0; margin:0;">
-        ${homeIconHTML}
-      </button>
-      <span style="font-weight:700;">단어창고</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:4px;">
-      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-        ${driveIconHTML}
-      </button>
-      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
-        ${logoutIconHTML}
-      </button>
-    </div>
-  `;
-  document.getElementById('btn-sync').onclick = handleSyncClick;
-  document.getElementById('btn-logout').onclick = handleLogoutClick;
-  
-  let html = '<div class="view storage-list">';
-  let hasArchived = false;
-  words.forEach((w, index) => {
-    if (!w || !w.word || !w.archived) return;
-    hasArchived = true;
-    html += `
-      <div class="storage-item" onclick="window.navigateTo('detail', ${index})">
-        <div class="storage-item-title">${w.word}</div>
-      </div>`;
-  });
-  if (!hasArchived) {
-    html = '<div class="view"><div class="empty-state"><p>보관된 단어가 없습니다.</p></div></div>';
+  renderHeader({ title: '단어창고', showHome: true });
+
+  const archivedWords = words.filter(w => w && w.word && w.archived);
+  if (archivedWords.length === 0) {
+    appMain.innerHTML = '<div class="view"><div class="empty-state"><p>보관된 단어가 없습니다.</p></div></div>';
   } else {
-    html += '</div>';
+    const itemsHTML = archivedWords
+      .map(w => `
+        <div class="storage-item" data-action="detail" data-id="${escapeHtml(w.id)}">
+          <div class="storage-item-title">${escapeHtml(w.word)}</div>
+        </div>`)
+      .join('');
+    appMain.innerHTML = `<div class="view storage-list">${itemsHTML}</div>`;
   }
-  appMain.innerHTML = html;
   renderFAB(null);
 };
 
-export const renderDetailView = (index) => {
-  const words = getWords();
-  const w = words[index];
-  viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px; flex:1;">
-      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Home" style="padding:0; margin:0;">
-        ${homeIconHTML}
-      </button>
-      <span style="font-weight:700;">단어정보</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:4px;">
-      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-        ${driveIconHTML}
-      </button>
-      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
-        ${logoutIconHTML}
-      </button>
-    </div>
-  `;
-  document.getElementById('btn-sync').onclick = handleSyncClick;
-  document.getElementById('btn-logout').onclick = handleLogoutClick;
-  
+export const renderDetailView = (id) => {
+  const w = getWordById(id);
+  if (!w) {
+    navigateTo('list', null, true);
+    return;
+  }
+
+  renderHeader({ title: '단어정보', showHome: true });
+
   appMain.innerHTML = `
     <div class="view detail-view">
       <div class="detail-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>${w.word}</h2>
-        <button class="btn-speak" onclick="window.speakWord('${w.word.replace(/'/g, "\\'")}')" title="미국식 발음 듣기">
+        <h2>${escapeHtml(w.word)}</h2>
+        <button class="btn-speak" data-action="speak" data-id="${escapeHtml(w.id)}" title="미국식 발음 듣기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -350,57 +333,54 @@ export const renderDetailView = (index) => {
       <div class="section"><div class="section-label">예문</div><div class="section-content example">${renderContent(w.example)}</div></div>
       <div class="section"><div class="section-label">번역</div><div class="section-content translation">${renderContent(w.translation)}</div></div>
       <div class="detail-actions">
-        <button class="btn-archive" onclick="window.toggleArchive(${index})">${w.archived ? '단어장 복귀' : '창고로 이동'}</button>
-        <button class="btn-pin" onclick="window.togglePin(${index})">${w.pinned ? '핀 해제' : '핀 고정'}</button>
-        <button class="btn-edit" onclick="window.navigateTo('edit', ${index})">수정하기</button>
-        <button class="btn-delete" onclick="window.deleteWord(${index})">삭제하기</button>
+        <button class="btn-archive" data-action="archive" data-id="${escapeHtml(w.id)}">${w.archived ? '단어장 복귀' : '창고로 이동'}</button>
+        <button class="btn-pin" data-action="pin" data-id="${escapeHtml(w.id)}">${w.pinned ? '핀 해제' : '핀 고정'}</button>
+        <button class="btn-edit" data-action="edit" data-id="${escapeHtml(w.id)}">수정하기</button>
+        <button class="btn-delete" data-action="delete" data-id="${escapeHtml(w.id)}">삭제하기</button>
       </div>
     </div>`;
   renderFAB(null);
 };
 
-export const renderFormView = (index = null) => {
-  const words = getWords();
-  const isEdit = index !== null;
-  const w = isEdit ? words[index] : { word: '', etymology: '', example: '', translation: '' };
-  viewTitle.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px; flex:1;">
-      <button class="header-home-btn" onclick="window.navigateTo('list')" title="Cancel" style="padding:0; margin:0;">
-        ${homeIconHTML}
-      </button>
-      <span style="font-weight:700;">${isEdit ? '수정하기' : '추가하기'}</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:4px;">
-      <button class="header-sync-btn" id="btn-sync" title="Firebase Sync">
-        ${driveIconHTML}
-      </button>
-      <button class="header-logout-btn" id="btn-logout" title="로그아웃">
-        ${logoutIconHTML}
-      </button>
-    </div>
-  `;
-  document.getElementById('btn-sync').onclick = handleSyncClick;
-  document.getElementById('btn-logout').onclick = handleLogoutClick;
-  
+export const renderFormView = (id = null) => {
+  const isEdit = id !== null && id !== undefined;
+  const existing = isEdit ? getWordById(id) : null;
+  if (isEdit && !existing) {
+    navigateTo('list', null, true);
+    return;
+  }
+
+  const w = existing || { word: '', etymology: '', example: '', translation: '' };
+  renderHeader({ title: isEdit ? '수정하기' : '추가하기', showHome: true, homeTitle: 'Cancel' });
+
   appMain.innerHTML = `
     <div class="view form-view">
-      <div class="form-group"><label>영어 단어</label><input type="text" id="input-word" value="${w.word}"></div>
-      <div class="form-group"><label>어원</label><textarea id="input-etymology">${w.etymology}</textarea></div>
-      <div class="form-group"><label>예문</label><textarea id="input-example">${w.example}</textarea></div>
-      <div class="form-group"><label>뜻</label><input type="text" id="input-translation" value="${w.translation}"></div>
+      <div class="form-group"><label>영어 단어</label><input type="text" id="input-word"></div>
+      <div class="form-group"><label>어원</label><textarea id="input-etymology"></textarea></div>
+      <div class="form-group"><label>예문</label><textarea id="input-example"></textarea></div>
+      <div class="form-group"><label>뜻</label><input type="text" id="input-translation"></div>
       <button class="btn-save" id="save-btn">저장하기</button>
     </div>`;
-  document.getElementById('save-btn').onclick = () => window.saveWord(index);
+
+  // DOM 프로퍼티로 직접 값을 주입하여 따옴표/태그 이스케이프 문제 방지
+  document.getElementById('input-word').value = w.word;
+  document.getElementById('input-etymology').value = w.etymology;
+  document.getElementById('input-example').value = w.example;
+  document.getElementById('input-translation').value = w.translation;
+  document.getElementById('save-btn').addEventListener('click', () => saveWord(isEdit ? id : null));
+
   renderFAB(null);
 };
 
 export const renderFAB = (type) => {
   fabContainer.innerHTML = type === 'add' ? `<div class="fab" id="fab-add">+</div>` : '';
-  if (type === 'add') document.getElementById('fab-add').onclick = () => window.navigateTo('add');
+  if (type === 'add') {
+    document.getElementById('fab-add').addEventListener('click', () => navigateTo('add'));
+  }
 };
 
 // --- Navigation Controller ---
-window.navigateTo = (view, data = null, isBack = false) => { 
+export const navigateTo = (view, data = null, isBack = false) => {
   const { isAuthorized, currentUser } = getAuthState();
   if (!isAuthorized) {
     if (currentUser) {
@@ -411,76 +391,135 @@ window.navigateTo = (view, data = null, isBack = false) => {
     return;
   }
 
-  setCurrentView(view); 
-  
+  setCurrentView(view);
+  setCurrentData(data);
+
   if (!isBack) {
     history.pushState({ view, data }, '', '');
   }
 
-  if (view === 'list') renderListView(); 
+  if (view === 'list') renderListView();
   else if (view === 'storage') renderStorageView();
-  else if (view === 'add' || view === 'edit') renderFormView(data); 
-  else if (view === 'detail') renderDetailView(data); 
+  else if (view === 'add' || view === 'edit') renderFormView(data);
+  else if (view === 'detail') renderDetailView(data);
 };
 
-// --- Action Helpers (전역 연결) ---
-window.saveWord = (index = null) => {
+// --- Action Helpers ---
+const saveWord = (id = null) => {
   const words = getWords();
-  const word = document.getElementById('input-word').value;
-  if (!word) return alert('단어를 입력해주세요.');
-  
-  const data = {
-    word,
-    etymology: document.getElementById('input-etymology').value,
-    example: document.getElementById('input-example').value,
-    translation: document.getElementById('input-translation').value
-  };
-  
-  if (index !== null) {
-    data.pinned = words[index].pinned || false;
-    data.archived = words[index].archived || false;
-    words[index] = data;
-  } else {
-    data.pinned = false;
-    data.archived = false;
-    words.unshift(data);
+  const word = document.getElementById('input-word').value.trim();
+  if (!word) {
+    alert('단어를 입력해주세요.');
+    return;
   }
-  
+
+  const now = Date.now();
+  const etymology = document.getElementById('input-etymology').value;
+  const example = document.getElementById('input-example').value;
+  const translation = document.getElementById('input-translation').value;
+
+  if (id !== null) {
+    const idx = words.findIndex(w => w.id === id);
+    if (idx === -1) {
+      navigateTo('list');
+      return;
+    }
+    words[idx] = {
+      ...words[idx],
+      word,
+      etymology,
+      example,
+      translation,
+      updatedAt: now
+    };
+    removeDeletedWord(id);
+    removeDeletedWord(word);
+  } else {
+    const newId = generateId();
+    words.unshift({
+      id: newId,
+      word,
+      etymology,
+      example,
+      translation,
+      pinned: false,
+      archived: false,
+      updatedAt: now
+    });
+    removeDeletedWord(word);
+  }
+
   sortWords();
   saveToLocal();
   uploadToFirebase();
-  window.navigateTo('list');
+  navigateTo('list');
 };
 
-window.toggleArchive = (index) => {
-  const words = getWords();
-  words[index].archived = !words[index].archived;
-  if (words[index].archived) words[index].pinned = false;
-  
+const toggleArchive = (id) => {
+  const w = getWordById(id);
+  if (!w) return;
+  w.archived = !w.archived;
+  if (w.archived) w.pinned = false;
+  w.updatedAt = Date.now();
+
   sortWords();
   saveToLocal();
   uploadToFirebase();
-  window.navigateTo(words[index].archived ? 'storage' : 'list');
+  navigateTo(w.archived ? 'storage' : 'list');
 };
 
-window.togglePin = (index) => {
-  const words = getWords();
-  words[index].pinned = !words[index].pinned;
-  
+const togglePin = (id) => {
+  const w = getWordById(id);
+  if (!w) return;
+  w.pinned = !w.pinned;
+  w.updatedAt = Date.now();
+
   sortWords();
   saveToLocal();
   uploadToFirebase();
-  window.navigateTo('list');
+  navigateTo('list');
 };
 
-window.deleteWord = (index) => {
+const deleteWord = (id) => {
   const words = getWords();
+  const idx = words.findIndex(w => w.id === id);
+  if (idx === -1) return;
+
   if (confirm('삭제할까요?')) {
-    addDeletedWord(words[index].word);
-    words.splice(index, 1);
-    
+    const target = words[idx];
+    addDeletedWord(target.id);
+    addDeletedWord(target.word);
+    words.splice(idx, 1);
+
     saveToLocal();
     uploadToFirebase();
-    window.navigateTo('list');
+    navigateTo('list');
   }
 };
+
+// --- Event Delegation ---
+viewTitle.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+  if (action === 'home') navigateTo('list');
+  else if (action === 'storage') navigateTo('storage');
+  else if (action === 'sync') handleSyncClick();
+  else if (action === 'logout') signOutUser();
+});
+
+appMain.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+
+  const { action, id } = target.dataset;
+  if (action === 'detail') navigateTo('detail', id);
+  else if (action === 'speak') {
+    const w = getWordById(id);
+    if (w) speakWord(w.word);
+  } else if (action === 'archive') toggleArchive(id);
+  else if (action === 'pin') togglePin(id);
+  else if (action === 'edit') navigateTo('edit', id);
+  else if (action === 'delete') deleteWord(id);
+});
