@@ -1,10 +1,11 @@
 // --- UI 및 렌더링 모듈 (UI Module) ---
 
-import DOMPurify from "dompurify";
-import { marked } from "marked";
 import {
   getWords,
   getWordById,
+  upsertWord,
+  removeWordById,
+  findDuplicateWord,
   getAuthState,
   getCurrentView,
   setCurrentView,
@@ -24,32 +25,57 @@ import {
 } from "./firebase.js";
 import { showToast } from "./toast.js";
 
-// Markdown 옵션 1회 설정
-marked.setOptions({
-  gfm: true,
-  breaks: true
-});
-
 // --- DOM Elements ---
 const appMain = document.getElementById('main-content');
 const viewTitle = document.getElementById('view-title');
 const fabContainer = document.getElementById('fab-container');
 
-// --- Markdown & Content Helpers ---
+// --- 검색어 상태 ---
+let listSearchQuery = '';
+let storageSearchQuery = '';
+
+// --- Markdown & DOMPurify 지연 로딩 (초기 번들 경량화) ---
+let cachedMarkdownParser = null;
+let markdownParserPromise = null;
+
+const loadMarkdownParser = () => {
+  if (cachedMarkdownParser) return Promise.resolve(cachedMarkdownParser);
+  if (!markdownParserPromise) {
+    markdownParserPromise = Promise.all([
+      import('marked'),
+      import('dompurify')
+    ]).then(([markedMod, purifyMod]) => {
+      const markedLib = markedMod.marked;
+      const DOMPurify = purifyMod.default;
+      markedLib.setOptions({
+        gfm: true,
+        breaks: true
+      });
+      cachedMarkdownParser = { marked: markedLib, DOMPurify };
+      return cachedMarkdownParser;
+    }).catch((err) => {
+      markdownParserPromise = null;
+      throw err;
+    });
+  }
+  return markdownParserPromise;
+};
+
+const MD_PATTERNS = [
+  /^#+\s/m,                  // 제목
+  /(\*\*|__)(.*?)\1/,        // 굵게
+  /(\*|_)(.*?)\1/,           // 기울임
+  /^\s*[-*+]\s/m,            // 순서 없는 목록
+  /^\s*\d+\.\s/m,            // 순서 있는 목록
+  /`[^`\n]+`/,               // 인라인 코드
+  /```[^`]+```/,             // 코드 블록
+  /\[([^\]]+)\]\(([^)]+)\)/, // 링크
+  /^\s*>\s/m                 // 인용구
+];
+
 const isMarkdown = (text) => {
   if (!text) return false;
-  const mdPatterns = [
-    /^#+\s/m,                  // headers
-    /(\*\*|__)(.*?)\1/,        // bold
-    /(\*|_)(.*?)\1/,           // italic
-    /^\s*[-*+]\s/m,            // unordered lists
-    /^\s*\d+\.\s/m,            // ordered lists
-    /`[^`\n]+`/,               // inline code
-    /```[^`]+```/,             // code blocks
-    /\[([^\]]+)\]\(([^)]+)\)/, // links
-    /^\s*>\s/m                 // blockquotes
-  ];
-  return mdPatterns.some(pattern => pattern.test(text));
+  return MD_PATTERNS.some((pattern) => pattern.test(text));
 };
 
 const escapeHtml = (text) => {
@@ -62,19 +88,33 @@ const escapeHtml = (text) => {
     .replace(/'/g, '&#039;');
 };
 
-const renderContent = (text) => {
+const renderPlainContent = (text) => {
   if (!text) return '-';
-  if (isMarkdown(text)) {
-    try {
-      return DOMPurify.sanitize(marked.parse(text));
-    } catch (err) {
-      console.error('Failed to parse markdown:', err);
-    }
-  }
   return escapeHtml(text).replace(/\n/g, '<br>');
 };
 
-// --- Helper Icons (HTML Strings) ---
+const parseMarkdownSync = (text, parser) => {
+  try {
+    return parser.DOMPurify.sanitize(parser.marked.parse(text));
+  } catch (err) {
+    console.error('마크다운 파싱 실패:', err);
+    return renderPlainContent(text);
+  }
+};
+
+// 캐시된 파서가 있으면 즉시 마크다운 렌더링, 없으면 평문 반환 후 비동기 업그레이드 표시
+const renderContentInitial = (text) => {
+  if (!text) return { html: '-', needsAsyncMd: false };
+  if (isMarkdown(text)) {
+    if (cachedMarkdownParser) {
+      return { html: parseMarkdownSync(text, cachedMarkdownParser), needsAsyncMd: false };
+    }
+    return { html: renderPlainContent(text), needsAsyncMd: true };
+  }
+  return { html: renderPlainContent(text), needsAsyncMd: false };
+};
+
+// --- 아이콘 SVG 상수 ---
 const violetIconHTML = `
   <svg class="violet-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" fill="var(--primary)" fill-opacity="0.1"/>
@@ -127,14 +167,24 @@ const logoutIconHTML = `
   </svg>
 `;
 
-// --- Pronunciation Helper ---
+const searchIconHTML = `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+`;
+
+const pinIconHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>`;
+const chevronRightIconHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--mute);"><path d="M9 18l6-6-6-6"></path></svg>`;
+
+// --- 발음 재생 헬퍼 ---
 const speakWord = (word) => {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = 'en-US';
     const voices = window.speechSynthesis.getVoices();
-    const usVoice = voices.find(v => v.lang === 'en-US' || v.lang.startsWith('en-'));
+    const usVoice = voices.find((v) => v.lang === 'en-US') || voices.find((v) => v.lang.startsWith('en-'));
     if (usVoice) {
       utterance.voice = usVoice;
     }
@@ -144,11 +194,31 @@ const speakWord = (word) => {
   }
 };
 
-// --- Shared Header Renderer ---
-const handleSyncClick = () => {
-  syncWithFirebase(() => {
-    navigateTo(getCurrentView(), getCurrentData(), true);
-  });
+// --- 검색 필터 헬퍼 ---
+const filterWordsByQuery = (list, query) => {
+  const q = query.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter((w) =>
+    w.word.toLowerCase().includes(q) ||
+    (w.translation && w.translation.toLowerCase().includes(q)) ||
+    (w.etymology && w.etymology.toLowerCase().includes(q))
+  );
+};
+
+// --- 공통 헤더 렌더러 ---
+const handleSyncClick = async (btnEl) => {
+  if (btnEl) btnEl.classList.add('syncing');
+  try {
+    await syncWithFirebase(() => {
+      const view = getCurrentView();
+      if (view !== 'add' && view !== 'edit') {
+        navigateTo(view, getCurrentData(), true);
+      }
+    });
+  } finally {
+    const currentBtn = viewTitle.querySelector('.header-sync-btn');
+    if (currentBtn) currentBtn.classList.remove('syncing');
+  }
 };
 
 const renderHeader = ({ title, showHome = false, showStorage = false, homeTitle = 'Home' }) => {
@@ -197,7 +267,7 @@ const renderCenteredHeader = () => {
   `;
 };
 
-// --- View Renderers ---
+// --- 뷰 렌더러 ---
 export const renderLoginView = () => {
   renderCenteredHeader();
   fabContainer.innerHTML = '';
@@ -222,7 +292,7 @@ export const renderLoginView = () => {
     try {
       await signInWithGoogle();
     } catch (err) {
-      console.error('Google Sign-in failed', err);
+      console.error('Google 로그인 실패:', err);
       alert('로그인 실패 상세 정보:\n\n에러 코드: ' + err.code + '\n에러 메시지: ' + err.message);
     }
   });
@@ -255,57 +325,136 @@ export const renderUnauthorizedView = (email) => {
     try {
       await signOutUser();
     } catch (err) {
-      console.error('Sign out failed', err);
+      console.error('로그아웃 실패:', err);
     }
   });
+};
+
+// 목록 아이템만 생성 (검색 시 부분 렌더링에 재사용)
+const buildListItemsHTML = (filteredWords, totalCount) => {
+  if (totalCount === 0) {
+    return `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
+  }
+  if (filteredWords.length === 0) {
+    return `<div class="empty-state"><p>검색 결과가 없습니다.</p></div>`;
+  }
+  return filteredWords.map((w) => `
+    <div class="voca-item" data-action="detail" data-id="${escapeHtml(w.id)}">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div style="min-width:0;">
+          <div class="voca-item-title">${escapeHtml(w.word)}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          ${w.pinned ? pinIconHTML : ''}
+          ${chevronRightIconHTML}
+        </div>
+      </div>
+    </div>
+  `).join('');
+};
+
+const formatCountLabel = (filteredCount, totalCount, query) => {
+  if (query.trim()) return `${filteredCount} / ${totalCount}`;
+  return `${totalCount}개`;
 };
 
 export const renderListView = () => {
   const words = getWords();
   renderHeader({ title: 'VocaLog', showStorage: true });
 
-  const activeWords = words.filter(w => w && w.word && !w.archived);
-  let html = '<div class="view voca-list">';
+  const activeWords = words.filter((w) => w && w.word && !w.archived);
+  const filteredWords = filterWordsByQuery(activeWords, listSearchQuery);
 
-  if (activeWords.length === 0) {
-    html += `<div class="empty-state"><p>기록된 단어가 없습니다.</p></div>`;
-  } else {
-    activeWords.forEach((w) => {
-      html += `
-        <div class="voca-item" data-action="detail" data-id="${escapeHtml(w.id)}">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div class="voca-item-title">${escapeHtml(w.word)}</div>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              ${w.pinned ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.1 16.3l-2.8-2.8V7.5C18.3 5 16.5 3 12 3S5.7 5 5.7 7.5v6L2.9 16.3c-.3.3-.3.8 0 1.1.2.1.4.2.6.2h6v4c0 .6.4 1.1 1 1.4h3c.6-.3 1-.8 1-1.4v-4h6c.2 0 .5-.1.6-.2.3-.3.3-.8 0-1.1z"></path></svg>' : ''}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--mute);"><path d="M9 18l6-6-6-6"></path></svg>
-            </div>
-          </div>
-        </div>`;
+  const searchBarHTML = activeWords.length > 0
+    ? `
+      <div class="search-bar">
+        <span class="search-icon" aria-hidden="true">${searchIconHTML}</span>
+        <input type="search" id="list-search-input" class="search-input" placeholder="단어, 뜻, 어원 검색..." autocomplete="off" />
+        <span class="word-count" id="list-word-count">${formatCountLabel(filteredWords.length, activeWords.length, listSearchQuery)}</span>
+      </div>
+    `
+    : '';
+
+  appMain.innerHTML = `
+    <div class="view">
+      ${searchBarHTML}
+      <div class="voca-list" id="voca-list-items">
+        ${buildListItemsHTML(filteredWords, activeWords.length)}
+      </div>
+    </div>
+  `;
+
+  const searchInput = document.getElementById('list-search-input');
+  if (searchInput) {
+    searchInput.value = listSearchQuery;
+    searchInput.addEventListener('input', (e) => {
+      listSearchQuery = e.target.value;
+      const nextFiltered = filterWordsByQuery(activeWords, listSearchQuery);
+      const listEl = document.getElementById('voca-list-items');
+      const countEl = document.getElementById('list-word-count');
+      if (listEl) listEl.innerHTML = buildListItemsHTML(nextFiltered, activeWords.length);
+      if (countEl) countEl.textContent = formatCountLabel(nextFiltered.length, activeWords.length, listSearchQuery);
     });
   }
-  html += '</div>';
-  appMain.innerHTML = html;
+
   renderFAB('add');
+};
+
+const buildStorageItemsHTML = (filteredWords, totalCount) => {
+  if (totalCount === 0) {
+    return `<div class="empty-state"><p>보관된 단어가 없습니다.</p></div>`;
+  }
+  if (filteredWords.length === 0) {
+    return `<div class="empty-state"><p>검색 결과가 없습니다.</p></div>`;
+  }
+  const itemsHTML = filteredWords
+    .map((w) => `
+      <div class="storage-item" data-action="detail" data-id="${escapeHtml(w.id)}">
+        <div class="storage-item-title">${escapeHtml(w.word)}</div>
+      </div>`)
+    .join('');
+  return `<div class="storage-list">${itemsHTML}</div>`;
 };
 
 export const renderStorageView = () => {
   const words = getWords();
   renderHeader({ title: '단어창고', showHome: true });
 
-  const archivedWords = words.filter(w => w && w.word && w.archived);
-  if (archivedWords.length === 0) {
-    appMain.innerHTML = '<div class="view"><div class="empty-state"><p>보관된 단어가 없습니다.</p></div></div>';
-  } else {
-    const itemsHTML = archivedWords
-      .map(w => `
-        <div class="storage-item" data-action="detail" data-id="${escapeHtml(w.id)}">
-          <div class="storage-item-title">${escapeHtml(w.word)}</div>
-        </div>`)
-      .join('');
-    appMain.innerHTML = `<div class="view storage-list">${itemsHTML}</div>`;
+  const archivedWords = words.filter((w) => w && w.word && w.archived);
+  const filteredWords = filterWordsByQuery(archivedWords, storageSearchQuery);
+
+  const searchBarHTML = archivedWords.length > 0
+    ? `
+      <div class="search-bar">
+        <span class="search-icon" aria-hidden="true">${searchIconHTML}</span>
+        <input type="search" id="storage-search-input" class="search-input" placeholder="창고 단어 검색..." autocomplete="off" />
+        <span class="word-count" id="storage-word-count">${formatCountLabel(filteredWords.length, archivedWords.length, storageSearchQuery)}</span>
+      </div>
+    `
+    : '';
+
+  appMain.innerHTML = `
+    <div class="view">
+      ${searchBarHTML}
+      <div id="storage-list-container">
+        ${buildStorageItemsHTML(filteredWords, archivedWords.length)}
+      </div>
+    </div>
+  `;
+
+  const searchInput = document.getElementById('storage-search-input');
+  if (searchInput) {
+    searchInput.value = storageSearchQuery;
+    searchInput.addEventListener('input', (e) => {
+      storageSearchQuery = e.target.value;
+      const nextFiltered = filterWordsByQuery(archivedWords, storageSearchQuery);
+      const containerEl = document.getElementById('storage-list-container');
+      const countEl = document.getElementById('storage-word-count');
+      if (containerEl) containerEl.innerHTML = buildStorageItemsHTML(nextFiltered, archivedWords.length);
+      if (countEl) countEl.textContent = formatCountLabel(nextFiltered.length, archivedWords.length, storageSearchQuery);
+    });
   }
+
   renderFAB(null);
 };
 
@@ -318,6 +467,10 @@ export const renderDetailView = (id) => {
 
   renderHeader({ title: '단어정보', showHome: true });
 
+  const etymologyRes = renderContentInitial(w.etymology);
+  const exampleRes = renderContentInitial(w.example);
+  const translationRes = renderContentInitial(w.translation);
+
   appMain.innerHTML = `
     <div class="view detail-view">
       <div class="detail-header" style="display:flex; justify-content:space-between; align-items:center;">
@@ -329,9 +482,9 @@ export const renderDetailView = (id) => {
           </svg>
         </button>
       </div>
-      <div class="section"><div class="section-label">어원</div><div class="section-content etymology">${renderContent(w.etymology)}</div></div>
-      <div class="section"><div class="section-label">예문</div><div class="section-content example">${renderContent(w.example)}</div></div>
-      <div class="section"><div class="section-label">번역</div><div class="section-content translation">${renderContent(w.translation)}</div></div>
+      <div class="section"><div class="section-label">어원</div><div class="section-content etymology" id="detail-etymology">${etymologyRes.html}</div></div>
+      <div class="section"><div class="section-label">예문</div><div class="section-content example" id="detail-example">${exampleRes.html}</div></div>
+      <div class="section"><div class="section-label">번역</div><div class="section-content translation" id="detail-translation">${translationRes.html}</div></div>
       <div class="detail-actions">
         <button class="btn-archive" data-action="archive" data-id="${escapeHtml(w.id)}">${w.archived ? '단어장 복귀' : '창고로 이동'}</button>
         <button class="btn-pin" data-action="pin" data-id="${escapeHtml(w.id)}">${w.pinned ? '핀 해제' : '핀 고정'}</button>
@@ -340,6 +493,30 @@ export const renderDetailView = (id) => {
       </div>
     </div>`;
   renderFAB(null);
+
+  // 마크다운 파서가 아직 로드되지 않은 경우에만 비동기 로드 후 해당 섹션 업그레이드
+  if (etymologyRes.needsAsyncMd || exampleRes.needsAsyncMd || translationRes.needsAsyncMd) {
+    loadMarkdownParser()
+      .then((parser) => {
+        // 비동기 로드 중 다른 화면으로 이동했다면 DOM 갱신 중단
+        if (getCurrentView() !== 'detail' || getCurrentData() !== id) return;
+        if (etymologyRes.needsAsyncMd) {
+          const el = document.getElementById('detail-etymology');
+          if (el) el.innerHTML = parseMarkdownSync(w.etymology, parser);
+        }
+        if (exampleRes.needsAsyncMd) {
+          const el = document.getElementById('detail-example');
+          if (el) el.innerHTML = parseMarkdownSync(w.example, parser);
+        }
+        if (translationRes.needsAsyncMd) {
+          const el = document.getElementById('detail-translation');
+          if (el) el.innerHTML = parseMarkdownSync(w.translation, parser);
+        }
+      })
+      .catch((err) => {
+        console.error('마크다운 모듈 로드 실패:', err);
+      });
+  }
 };
 
 export const renderFormView = (id = null) => {
@@ -354,32 +531,51 @@ export const renderFormView = (id = null) => {
   renderHeader({ title: isEdit ? '수정하기' : '추가하기', showHome: true, homeTitle: 'Cancel' });
 
   appMain.innerHTML = `
-    <div class="view form-view">
-      <div class="form-group"><label>영어 단어</label><input type="text" id="input-word"></div>
-      <div class="form-group"><label>어원</label><textarea id="input-etymology"></textarea></div>
-      <div class="form-group"><label>예문</label><textarea id="input-example"></textarea></div>
-      <div class="form-group"><label>뜻</label><input type="text" id="input-translation"></div>
+    <div class="view form-view" id="word-form">
+      <div class="form-group"><label for="input-word">영어 단어</label><input type="text" id="input-word" autocomplete="off"></div>
+      <div class="form-group"><label for="input-etymology">어원</label><textarea id="input-etymology"></textarea></div>
+      <div class="form-group"><label for="input-example">예문</label><textarea id="input-example"></textarea></div>
+      <div class="form-group"><label for="input-translation">뜻</label><input type="text" id="input-translation"></div>
       <button class="btn-save" id="save-btn">저장하기</button>
     </div>`;
 
   // DOM 프로퍼티로 직접 값을 주입하여 따옴표/태그 이스케이프 문제 방지
-  document.getElementById('input-word').value = w.word;
-  document.getElementById('input-etymology').value = w.etymology;
-  document.getElementById('input-example').value = w.example;
-  document.getElementById('input-translation').value = w.translation;
-  document.getElementById('save-btn').addEventListener('click', () => saveWord(isEdit ? id : null));
+  const wordInput = document.getElementById('input-word');
+  const etymologyInput = document.getElementById('input-etymology');
+  const exampleInput = document.getElementById('input-example');
+  const translationInput = document.getElementById('input-translation');
+
+  wordInput.value = w.word;
+  etymologyInput.value = w.etymology;
+  exampleInput.value = w.example;
+  translationInput.value = w.translation;
+
+  // 새 단어 추가 시 즉시 입력할 수 있도록 포커스
+  if (!isEdit) {
+    wordInput.focus();
+  }
+
+  const handleSave = () => saveWord(isEdit ? id : null);
+  document.getElementById('save-btn').addEventListener('click', handleSave);
+
+  // Ctrl+Enter 또는 Cmd+Enter로 빠른 저장
+  document.getElementById('word-form').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    }
+  });
 
   renderFAB(null);
 };
 
 export const renderFAB = (type) => {
-  fabContainer.innerHTML = type === 'add' ? `<div class="fab" id="fab-add">+</div>` : '';
-  if (type === 'add') {
-    document.getElementById('fab-add').addEventListener('click', () => navigateTo('add'));
-  }
+  fabContainer.innerHTML = type === 'add'
+    ? `<button class="fab" type="button" data-action="add" aria-label="새 단어 추가">+</button>`
+    : '';
 };
 
-// --- Navigation Controller ---
+// --- 네비게이션 컨트롤러 ---
 export const navigateTo = (view, data = null, isBack = false) => {
   const { isAuthorized, currentUser } = getAuthState();
   if (!isAuthorized) {
@@ -404,13 +600,22 @@ export const navigateTo = (view, data = null, isBack = false) => {
   else if (view === 'detail') renderDetailView(data);
 };
 
-// --- Action Helpers ---
+// --- 액션 헬퍼 ---
 const saveWord = (id = null) => {
-  const words = getWords();
   const word = document.getElementById('input-word').value.trim();
   if (!word) {
-    alert('단어를 입력해주세요.');
+    showToast('단어를 입력해주세요.', 'error');
+    document.getElementById('input-word').focus();
     return;
+  }
+
+  // 중복 단어 등록 확인
+  const duplicate = findDuplicateWord(word, id);
+  if (duplicate) {
+    const locationLabel = duplicate.archived ? '단어창고' : '단어장';
+    if (!confirm(`"${duplicate.word}" 단어는 이미 ${locationLabel}에 등록되어 있습니다. 그래도 저장할까요?`)) {
+      return;
+    }
   }
 
   const now = Date.now();
@@ -419,24 +624,24 @@ const saveWord = (id = null) => {
   const translation = document.getElementById('input-translation').value;
 
   if (id !== null) {
-    const idx = words.findIndex(w => w.id === id);
-    if (idx === -1) {
+    const existing = getWordById(id);
+    if (!existing) {
       navigateTo('list');
       return;
     }
-    words[idx] = {
-      ...words[idx],
+    upsertWord({
+      ...existing,
       word,
       etymology,
       example,
       translation,
       updatedAt: now
-    };
+    });
     removeDeletedWord(id);
     removeDeletedWord(word);
   } else {
     const newId = generateId();
-    words.unshift({
+    upsertWord({
       id: newId,
       word,
       etymology,
@@ -481,15 +686,13 @@ const togglePin = (id) => {
 };
 
 const deleteWord = (id) => {
-  const words = getWords();
-  const idx = words.findIndex(w => w.id === id);
-  if (idx === -1) return;
+  const target = getWordById(id);
+  if (!target) return;
 
   if (confirm('삭제할까요?')) {
-    const target = words[idx];
     addDeletedWord(target.id);
     addDeletedWord(target.word);
-    words.splice(idx, 1);
+    removeWordById(id);
 
     saveToLocal();
     uploadToFirebase();
@@ -497,7 +700,7 @@ const deleteWord = (id) => {
   }
 };
 
-// --- Event Delegation ---
+// --- 이벤트 위임 ---
 viewTitle.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -505,7 +708,7 @@ viewTitle.addEventListener('click', (e) => {
   const action = btn.dataset.action;
   if (action === 'home') navigateTo('list');
   else if (action === 'storage') navigateTo('storage');
-  else if (action === 'sync') handleSyncClick();
+  else if (action === 'sync') handleSyncClick(btn);
   else if (action === 'logout') signOutUser();
 });
 
@@ -522,4 +725,9 @@ appMain.addEventListener('click', (e) => {
   else if (action === 'pin') togglePin(id);
   else if (action === 'edit') navigateTo('edit', id);
   else if (action === 'delete') deleteWord(id);
+});
+
+fabContainer.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action="add"]');
+  if (btn) navigateTo('add');
 });

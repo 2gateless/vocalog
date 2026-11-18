@@ -1,7 +1,6 @@
 // --- Firebase 설정 및 연동 모듈 (Firebase Module) ---
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, set } from "firebase/database";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "firebase/auth";
 import {
   getWords,
@@ -26,9 +25,30 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+
+// Realtime Database 모듈 지연 로딩 (초기 화면 렌더링 차단 방지)
+let dbContextPromise = null;
+const getDbContext = () => {
+  if (!dbContextPromise) {
+    dbContextPromise = import("firebase/database")
+      .then((mod) => ({
+        db: mod.getDatabase(app),
+        ref: mod.ref,
+        get: mod.get,
+        set: mod.set
+      }))
+      .catch((err) => {
+        dbContextPromise = null;
+        throw err;
+      });
+  }
+  return dbContextPromise;
+};
+
+// 중복 동기화 방지를 위한 진행 중 Promise
+let activeSyncPromise = null;
 
 // Google 로그인
 export const signInWithGoogle = async () => {
@@ -49,15 +69,16 @@ export const onAuthChanged = (callback) => {
 export const uploadToFirebase = async () => {
   const { isAuthorized } = getAuthState();
   if (!isAuthorized) {
-    console.warn('Upload blocked: User not authorized.');
+    console.warn('업로드 차단됨: 인증되지 않은 사용자입니다.');
     return false;
   }
   try {
+    const { db, ref, set } = await getDbContext();
     const dbRef = ref(db, 'vocaLog');
     await set(dbRef, getWords());
     return true;
   } catch (err) {
-    console.error('Failed to upload to Firebase', err);
+    console.error('Firebase 업로드 실패:', err);
     showToast('클라우드 저장 실패', 'error');
     return false;
   }
@@ -67,23 +88,60 @@ const isItemDeleted = (item, deletedWords) => {
   return deletedWords.has(item.id) || deletedWords.has(item.word);
 };
 
-// Firebase와 양방향 동기화
-export const syncWithFirebase = async (onSyncSuccess) => {
+// 두 단어 객체의 실질적 동일성 비교
+const isWordEqual = (a, b) => {
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.word === b.word &&
+    a.etymology === b.etymology &&
+    a.example === b.example &&
+    a.translation === b.translation &&
+    a.pinned === b.pinned &&
+    a.archived === b.archived &&
+    a.updatedAt === b.updatedAt
+  );
+};
+
+// 두 단어 배열(정규화된 상태)이 동일한지 비교
+const areWordListsEqual = (listA, listB) => {
+  if (listA.length !== listB.length) return false;
+  const mapA = new Map(listA.map((w) => [w.id, w]));
+  if (mapA.size !== listB.length) return false;
+  for (const item of listB) {
+    const counterpart = mapA.get(item.id);
+    if (!isWordEqual(counterpart, item)) return false;
+  }
+  return true;
+};
+
+// Firebase와 양방향 동기화 (중복 호출 방지 + 변경 시에만 업로드/리렌더링)
+export const syncWithFirebase = (onSyncSuccess, { silent = false } = {}) => {
+  if (activeSyncPromise) return activeSyncPromise;
+
   const { isAuthorized } = getAuthState();
   if (!isAuthorized) {
-    console.warn('Sync blocked: User not authorized.');
-    return;
+    console.warn('동기화 차단됨: 인증되지 않은 사용자입니다.');
+    return Promise.resolve({ changed: false, ok: false });
   }
-  showToast('동기화 중...', 'info');
 
-  try {
-    const dbRef = ref(db, 'vocaLog');
-    const snapshot = await get(dbRef);
-    const remoteData = snapshot.val();
-    const deletedWords = getDeletedWords();
-    const localWords = getWords();
+  if (!silent) {
+    showToast('동기화 중...', 'info');
+  }
 
-    if (remoteData) {
+  activeSyncPromise = (async () => {
+    try {
+      const { db, ref, get } = await getDbContext();
+      const dbRef = ref(db, 'vocaLog');
+      const snapshot = await get(dbRef);
+      const remoteData = snapshot.val();
+      const deletedWords = getDeletedWords();
+      const localWords = getWords();
+
+      const remoteList = remoteData
+        ? Object.keys(remoteData).map((key) => normalizeWord(remoteData[key])).filter(Boolean)
+        : [];
+
       const mergedMap = new Map();
 
       localWords.forEach((raw) => {
@@ -93,10 +151,8 @@ export const syncWithFirebase = async (onSyncSuccess) => {
         }
       });
 
-      Object.keys(remoteData).forEach((key) => {
-        const item = normalizeWord(remoteData[key]);
-        if (!item || isItemDeleted(item, deletedWords)) return;
-
+      remoteList.forEach((item) => {
+        if (isItemDeleted(item, deletedWords)) return;
         const existing = mergedMap.get(item.id);
         if (!existing || item.updatedAt >= existing.updatedAt) {
           mergedMap.set(item.id, item);
@@ -104,18 +160,41 @@ export const syncWithFirebase = async (onSyncSuccess) => {
       });
 
       const mergedWords = Array.from(mergedMap.values());
-      setWords(mergedWords);
-      sortWords();
-      saveToLocal();
-    }
+      const localChanged = !areWordListsEqual(localWords, mergedWords);
+      const remoteChanged = !areWordListsEqual(remoteList, mergedWords);
 
-    const uploaded = await uploadToFirebase();
-    if (uploaded) {
-      showToast('동기화 완료', 'success');
-      if (onSyncSuccess) onSyncSuccess();
+      if (localChanged) {
+        setWords(mergedWords);
+        sortWords();
+        saveToLocal();
+      }
+
+      let ok = true;
+      if (remoteChanged) {
+        ok = await uploadToFirebase();
+      }
+
+      if (ok) {
+        if (!silent) {
+          showToast(localChanged || remoteChanged ? '동기화 완료' : '이미 최신 상태입니다', 'success');
+        } else if (localChanged) {
+          showToast('최신 데이터 동기화 완료', 'success');
+        }
+
+        if (localChanged && onSyncSuccess) {
+          onSyncSuccess({ changed: true });
+        }
+      }
+
+      return { changed: localChanged, ok };
+    } catch (err) {
+      showToast('동기화 실패', 'error');
+      console.error('Firebase 동기화 실패:', err);
+      return { changed: false, ok: false };
+    } finally {
+      activeSyncPromise = null;
     }
-  } catch (err) {
-    showToast('동기화 실패', 'error');
-    console.error('Firebase Sync failed', err);
-  }
+  })();
+
+  return activeSyncPromise;
 };

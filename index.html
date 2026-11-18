@@ -7,10 +7,11 @@
     <meta name="theme-color" content="#2e7d32" />
     <link rel="manifest" href="./manifest.json" />
     <title>VocaLog - 영어 어원 메모장</title>
-    <!-- Google Fonts: Inter and Nanum Gothic for Korean -->
+    <!-- Google Fonts: Inter (렌더링 차단 방지를 위해 비동기 로드) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
   </head>
   <body>
     <div id="app">
@@ -19,7 +20,10 @@
       </header>
       
       <main id="main-content">
-        <!-- Content will be injected by main.js -->
+        <div class="initial-loading" aria-live="polite">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p>단어장을 불러오는 중...</p>
+        </div>
       </main>
 
       <footer class="app-footer">
